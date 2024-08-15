@@ -24,10 +24,10 @@ export class User {
   dni: string;
   @Column({ type: 'varchar', length: 255 })
   direccion: string;
-  @Column({ type: 'bool', default: false })
-  autorizado: boolean;
-  @Column({ type: 'bool', default: true })
-  isActive: boolean;
+  @Column({ type: 'int', default: 0 })
+  autorizado: number;
+  @Column({ type: 'int', default: 1 })
+  isActive: number;
 
   @BeforeInsert()
   checkCorreo() {

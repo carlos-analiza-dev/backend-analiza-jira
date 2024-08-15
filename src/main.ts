@@ -10,6 +10,11 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     })
   );
+  app.enableCors({
+    origin: process.env.FRONTEND_URL,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
   app.setGlobalPrefix('analiza');
   await app.listen(process.env.PORT);
 }

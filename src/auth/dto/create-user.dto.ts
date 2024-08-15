@@ -13,9 +13,16 @@ import {
 export class CreateUserDto {
   @IsString({ message: "El Campo 'nombre' solo debe contener letras" })
   @MinLength(3, { message: "El campo 'nombre' debe contener 3 o más letras" })
+  @Matches(/^[a-zA-Z\s]+$/, {
+    message: 'El campo nombre solo acepta letras y espacios en blanco',
+  })
   nombre: string;
 
   @IsEmail()
+  @Matches(
+    /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/,
+    { message: "EL campo 'correo' no cuenta con el formato correspondiente" }
+  )
   correo: string;
 
   @MinLength(6, {
@@ -50,6 +57,9 @@ export class CreateUserDto {
   @IsString({ message: "El campo 'direccion' solo acepta letras" })
   @MaxLength(100, {
     message: "El campo 'direccion' no puede exceder los 100 caracteres",
+  })
+  @MinLength(2, {
+    message: "El campo 'direccion' no puede tener menos de 2 caracteres",
   })
   direccion: string;
 }

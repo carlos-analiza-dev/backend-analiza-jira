@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -12,6 +13,8 @@ import * as bcrypt from 'bcrypt';
 import { LoginUserDto } from './dto/login-user.dto';
 import { JwtPayload } from 'src/interfaces/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -62,7 +65,7 @@ export class AuthService {
       if (!bcrypt.compareSync(password, user.password))
         throw new UnauthorizedException('Credenciales invalidas (contrasena)');
 
-      if (user.autorizado === false)
+      if (user.autorizado === 0)
         throw new UnauthorizedException(
           'No has sido autorizado por el administrador'
         );
@@ -78,8 +81,31 @@ export class AuthService {
     return token;
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  async findAll(paginationDto: PaginationDto) {
+    const { limit = 9, offset = 0, sexo } = paginationDto;
+    let queryUsers = this.userReository
+      .createQueryBuilder('user')
+      .take(limit)
+      .skip(offset);
+    if (sexo) {
+      queryUsers = queryUsers.where('user.sexo = :sexo', { sexo });
+    }
+    const users = await queryUsers.getMany();
+    if (!users || users.length === 0) {
+      throw new BadRequestException('No se encontraron usuarios');
+    }
+    return users;
+  }
+
+  async updateUser(id: string, updateUserDto: UpdateUserDto) {
+    const user = await this.userReository.findOne({ where: { id } });
+    if (!user)
+      throw new BadRequestException(
+        `No se encontro el usuario con el id:${id}`
+      );
+    Object.assign(user, updateUserDto);
+
+    return this.userReository.save(user);
   }
 
   findOne(id: number) {
