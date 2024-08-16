@@ -2,7 +2,6 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -55,6 +54,8 @@ export class AuthService {
           password: true,
           isActive: true,
           autorizado: true,
+          nombre: true,
+          dni: true,
           id: true,
         },
       });
@@ -69,7 +70,7 @@ export class AuthService {
         throw new UnauthorizedException(
           'No has sido autorizado por el administrador'
         );
-
+      delete user.password;
       return { ...user, token: this.getJwtPayload({ id: user.id }) };
     } catch (error) {
       this.handleError(error);
@@ -82,7 +83,7 @@ export class AuthService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { limit = 9, offset = 0, sexo } = paginationDto;
+    const { limit = 5, offset = 0, sexo } = paginationDto;
     let queryUsers = this.userReository
       .createQueryBuilder('user')
       .take(limit)

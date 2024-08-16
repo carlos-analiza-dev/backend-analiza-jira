@@ -1,17 +1,11 @@
-import {
-  IsEmail,
-  IsNumber,
-  IsPositive,
-  IsString,
-  Matches,
-  MaxLength,
-  MinLength,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsEmail, Matches, MaxLength, MinLength } from 'class-validator';
 
 export class LoginUserDto {
   @IsEmail()
+  @Matches(
+    /^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/,
+    { message: "EL campo 'correo' no cuenta con el formato correspondiente" }
+  )
   correo: string;
 
   @MinLength(6, {

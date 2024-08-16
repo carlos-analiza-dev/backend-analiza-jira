@@ -1,8 +1,11 @@
+import { Role } from 'src/roles/entities/role.entity';
+import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import {
   BeforeInsert,
   BeforeUpdate,
   Column,
   Entity,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -28,6 +31,12 @@ export class User {
   autorizado: number;
   @Column({ type: 'int', default: 1 })
   isActive: number;
+
+  @ManyToOne(() => Role, (role) => role.users, { eager: true })
+  role: Role;
+
+  @ManyToOne(() => Sucursal, (sucursal) => sucursal.users, { eager: true })
+  sucursal: Sucursal;
 
   @BeforeInsert()
   checkCorreo() {
