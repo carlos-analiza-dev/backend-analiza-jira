@@ -1,26 +1,72 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateSucursalDto } from './dto/create-sucursal.dto';
 import { UpdateSucursalDto } from './dto/update-sucursal.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Sucursal } from './entities/sucursal.entity';
 
 @Injectable()
 export class SucursalService {
-  create(createSucursalDto: CreateSucursalDto) {
-    return 'This action adds a new sucursal';
+  constructor(
+    @InjectRepository(Sucursal)
+    private readonly sucursalRepository: Repository<Sucursal>
+  ) {}
+  async create(createSucursalDto: CreateSucursalDto) {
+    try {
+      const sucursal = this.sucursalRepository.create(createSucursalDto);
+      await this.sucursalRepository.save(sucursal);
+      return sucursal;
+    } catch (error) {
+      console.log(error);
+      this.handleError(error);
+    }
   }
 
-  findAll() {
-    return `This action returns all sucursal`;
+  async findAll() {
+    const allSucursals = await this.sucursalRepository.find({});
+    if (!allSucursals || allSucursals.length === 0)
+      throw new NotFoundException(
+        'No se encontraron sucursales en la base de datos'
+      );
+
+    return allSucursals;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} sucursal`;
+  async findOne(id: string) {
+    const sucurcalById = await this.sucursalRepository.findOne({
+      where: { id },
+    });
+    if (!sucurcalById)
+      throw new NotFoundException('No se pudo encontrar la sucursal');
+    return sucurcalById;
   }
 
-  update(id: number, updateSucursalDto: UpdateSucursalDto) {
+  update(id: string, updateSucursalDto: UpdateSucursalDto) {
     return `This action updates a #${id} sucursal`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} sucursal`;
+  async remove(id: string) {
+    const deleteSucursal = await this.sucursalRepository.findOne({
+      where: { id },
+    });
+    if (!deleteSucursal)
+      throw new NotFoundException(
+        'No se encontro la sucursal que se desea eliminar'
+      );
+    await this.sucursalRepository.delete(id);
+    return 'Sucursal eliminida exitosamente';
+  }
+
+  private handleError(error: any) {
+    if (error.code === '23505') throw new BadRequestException(error.detail);
+
+    throw new InternalServerErrorException(
+      'Hubo un error intrerno en el servidor'
+    );
   }
 }

@@ -5,11 +5,17 @@ export class CreateSucursalDto {
   @MinLength(3, {
     message: "El campo 'sucursal' debe tener 3 o mas caracteres",
   })
-  name: string;
+  nombre: string;
 
   @IsString({ message: 'Solo se permiten letras en el campo de departamento.' })
   @MinLength(3, {
     message: "El campo 'departamento' debe tener 3 o mas caracteres",
   })
   departamento: string;
+
+  @IsString({ message: 'Solo se permiten letras en el campo de direccion.' })
+  @MinLength(3, {
+    message: "El campo 'direccion' debe tener 3 o mas caracteres",
+  })
+  direccion: string;
 }

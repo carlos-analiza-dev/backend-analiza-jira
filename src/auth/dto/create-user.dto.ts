@@ -62,4 +62,10 @@ export class CreateUserDto {
     message: "El campo 'direccion' no puede tener menos de 2 caracteres",
   })
   direccion: string;
+
+  @IsString({ message: "El campo 'rol' debe ser de tipo string" })
+  roleId: string;
+
+  @IsString({ message: "El campo 'sucursal' debe ser de tipo string" })
+  sucursalId: string;
 }

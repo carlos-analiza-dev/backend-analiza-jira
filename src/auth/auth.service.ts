@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -14,19 +15,41 @@ import { JwtPayload } from 'src/interfaces/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Role } from 'src/roles/entities/role.entity';
+import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userReository: Repository<User>,
+    @InjectRepository(Role)
+    private readonly rolRepository: Repository<Role>,
+    @InjectRepository(Sucursal)
+    private readonly sucursalRepository: Repository<Sucursal>,
     private readonly jwtService: JwtService
   ) {}
   async create(createUserDto: CreateUserDto) {
     try {
-      const { nombre, correo, dni, direccion, edad, password, sexo } =
-        createUserDto;
+      const {
+        nombre,
+        correo,
+        dni,
+        direccion,
+        edad,
+        password,
+        sexo,
+        roleId,
+        sucursalId,
+      } = createUserDto;
       const passwordHash = bcrypt.hashSync(password, 10);
+      const role = await this.rolRepository.findOne({ where: { id: roleId } });
+      if (!role) {
+        throw new Error('Role no encontrado');
+      }
+      const sucursal = await this.sucursalRepository.findOne({
+        where: { id: sucursalId },
+      });
       const user = this.userReository.create({
         nombre: nombre,
         correo: correo,
@@ -35,6 +58,8 @@ export class AuthService {
         edad: edad,
         password: passwordHash,
         sexo: sexo,
+        role,
+        sucursal,
       });
       await this.userReository.save(user);
       delete user.password;
@@ -86,6 +111,10 @@ export class AuthService {
     const { limit = 5, offset = 0, sexo } = paginationDto;
     let queryUsers = this.userReository
       .createQueryBuilder('user')
+      .leftJoin('user.role', 'role')
+      .addSelect('role.nombre')
+      .leftJoin('user.sucursal', 'sucursal')
+      .addSelect('sucursal.nombre')
       .take(limit)
       .skip(offset);
     if (sexo) {
@@ -109,12 +138,20 @@ export class AuthService {
     return this.userReository.save(user);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
+  async findOne(id: string) {
+    const user = await this.userReository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('No se pudo encontrar el usuario.');
+    return user;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+  async remove(id: string) {
+    const user = await this.userReository.findOne({ where: { id } });
+    if (!user)
+      throw new NotFoundException(
+        'No  se encontro el usuario que se desea eliminar'
+      );
+    await this.userReository.delete(id);
+    return 'Usuario Eliminado Exitosamente';
   }
 
   private handleError(error: any): never {

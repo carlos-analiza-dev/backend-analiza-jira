@@ -35,8 +35,8 @@ export class AuthController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.authService.findOne(id);
   }
 
   @Patch(':id')
@@ -48,7 +48,7 @@ export class AuthController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.authService.remove(id);
   }
 }

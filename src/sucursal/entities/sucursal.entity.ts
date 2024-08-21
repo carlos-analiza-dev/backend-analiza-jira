@@ -7,10 +7,13 @@ export class Sucursal {
   id: string;
 
   @Column({ type: 'varchar', unique: true })
-  name: string;
+  nombre: string;
 
   @Column({ type: 'varchar' })
   departamento: string;
+
+  @Column({ type: 'varchar' })
+  direccion: string;
 
   @OneToMany(() => User, (user) => user.sucursal)
   users: [];
