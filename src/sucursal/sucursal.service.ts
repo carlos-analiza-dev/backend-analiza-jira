@@ -46,8 +46,20 @@ export class SucursalService {
     return sucurcalById;
   }
 
-  update(id: string, updateSucursalDto: UpdateSucursalDto) {
-    return `This action updates a #${id} sucursal`;
+  async update(id: string, updateSucursalDto: UpdateSucursalDto) {
+    const updateSucursal = await this.sucursalRepository.find({
+      where: { id },
+    });
+    if (!updateSucursal)
+      throw new NotFoundException(
+        `No se encontro la sucursale con el id:${id}`
+      );
+    try {
+      await this.sucursalRepository.update(id, updateSucursalDto);
+      return 'Sucursal actualizada exitosamente';
+    } catch (error) {
+      this.handleError(error);
+    }
   }
 
   async remove(id: string) {

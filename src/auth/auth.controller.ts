@@ -34,6 +34,11 @@ export class AuthController {
     return this.authService.findAll(paginationDto);
   }
 
+  @Get('autorizar')
+  findAllAutorizar(@Query() paginationDto: PaginationDto) {
+    return this.authService.findAllAutorizar(paginationDto);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.authService.findOne(id);

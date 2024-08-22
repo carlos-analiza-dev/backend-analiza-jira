@@ -127,6 +127,32 @@ export class AuthService {
     return users;
   }
 
+  async findAllAutorizar(paginationDto: PaginationDto) {
+    const { limit = 5, offset = 0, sexo } = paginationDto;
+
+    let queryUsers = this.userReository
+      .createQueryBuilder('user')
+      .where('user.autorizado = :autorizado', { autorizado: 0 })
+      .leftJoin('user.role', 'role')
+      .addSelect('role.nombre')
+      .leftJoin('user.sucursal', 'sucursal')
+      .addSelect('sucursal.nombre')
+      .take(limit)
+      .skip(offset);
+
+    if (sexo) {
+      queryUsers = queryUsers.andWhere('user.sexo = :sexo', { sexo });
+    }
+
+    const users = await queryUsers.getMany();
+
+    if (!users || users.length === 0) {
+      throw new BadRequestException('No se encontraron usuarios');
+    }
+
+    return users;
+  }
+
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
     const user = await this.userReository.findOne({ where: { id } });
     if (!user)

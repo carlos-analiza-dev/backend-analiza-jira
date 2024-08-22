@@ -51,27 +51,27 @@ export class RolesService {
   }
 
   async update(id: string, updateRoleDto: UpdateRoleDto) {
-    const usuarioUpdate = await this.rolRepository.findOne({ where: { id } });
-    if (!usuarioUpdate)
+    const roleUpdate = await this.rolRepository.findOne({ where: { id } });
+    if (!roleUpdate)
       throw new BadRequestException(
-        'El usuario que deseas actualizar no existe en la base de datos'
+        'El rol que deseas actualizar no existe en la base de datos'
       );
     try {
       await this.rolRepository.update(id, updateRoleDto);
-      return `Usuario con id:${id} actualizado exitosamente`;
+      return `El rol con id:${id} actualizado exitosamente`;
     } catch (error) {
       this.handleError(error);
     }
   }
 
   async remove(id: string) {
-    const usuarioDelete = await this.rolRepository.findOne({ where: { id } });
-    if (!usuarioDelete)
+    const rolDelete = await this.rolRepository.findOne({ where: { id } });
+    if (!rolDelete)
       throw new BadRequestException(
-        'El usuario que intentas eliminar no se encuentra en la base de datos'
+        'El ROL que intentas eliminar no se encuentra en la base de datos'
       );
     await this.rolRepository.delete(id);
-    return `Usuario Eliminado exitosamente`;
+    return `Rol Eliminado exitosamente`;
   }
   private handleError(error: any) {
     if (error.code === '23505') throw new BadRequestException(error.detail);
