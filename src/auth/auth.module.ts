@@ -9,13 +9,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { Role } from 'src/roles/entities/role.entity';
+import { Tarea } from 'src/tareas/entities/tarea.entity';
+import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
 
 @Module({
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User, Sucursal, Role]),
+    TypeOrmModule.forFeature([User, Sucursal, Role, Tarea, Proyecto]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

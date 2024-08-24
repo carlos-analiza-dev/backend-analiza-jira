@@ -7,6 +7,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CommonModule } from './common/common.module';
 import { RolesModule } from './roles/roles.module';
 import { SucursalModule } from './sucursal/sucursal.module';
+import { ProyectosModule } from './proyectos/proyectos.module';
+import { TareasModule } from './tareas/tareas.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { SucursalModule } from './sucursal/sucursal.module';
     CommonModule,
     RolesModule,
     SucursalModule,
+    ProyectosModule,
+    TareasModule,
   ],
   controllers: [AppController],
   providers: [AppService],

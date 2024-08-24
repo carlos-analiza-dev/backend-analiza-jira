@@ -1,11 +1,14 @@
+import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
+import { Tarea } from 'src/tareas/entities/tarea.entity';
 import {
   BeforeInsert,
   BeforeUpdate,
   Column,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -37,6 +40,12 @@ export class User {
 
   @ManyToOne(() => Sucursal, (sucursal) => sucursal.users, { eager: true })
   sucursal: Sucursal;
+
+  @ManyToOne(() => Proyecto, (proyecto) => proyecto.usuarios, { eager: true })
+proyecto: Proyecto;
+
+@OneToMany(() => Tarea, (tarea) => tarea.usuario)
+tareas: Tarea[];
 
   @BeforeInsert()
   checkCorreo() {
