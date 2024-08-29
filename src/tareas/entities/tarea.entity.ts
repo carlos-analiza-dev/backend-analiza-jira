@@ -1,4 +1,3 @@
-
 import { User } from 'src/auth/entities/user.entity';
 import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
@@ -14,7 +13,11 @@ export class Tarea {
   @Column({ type: 'text' })
   descripcion: string;
 
-  @Column({ type: 'enum', enum: ['Nueva', 'En Progreso', 'Finalizada'], default: 'Nueva' })
+  @Column({
+    type: 'enum',
+    enum: ['Nueva', 'En Progreso', 'Finalizada'],
+    default: 'Nueva',
+  })
   estado: string;
 
   @ManyToOne(() => Proyecto, (proyecto) => proyecto.tareas)
@@ -22,4 +25,7 @@ export class Tarea {
 
   @ManyToOne(() => User, (user) => user.tareas)
   usuario: User;
+
+  @ManyToOne(() => User, (user) => user.tareasCreadas)
+  creador: User;
 }

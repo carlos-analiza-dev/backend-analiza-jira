@@ -9,6 +9,7 @@ import { RolesModule } from './roles/roles.module';
 import { SucursalModule } from './sucursal/sucursal.module';
 import { ProyectosModule } from './proyectos/proyectos.module';
 import { TareasModule } from './tareas/tareas.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { TareasModule } from './tareas/tareas.module';
     SucursalModule,
     ProyectosModule,
     TareasModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

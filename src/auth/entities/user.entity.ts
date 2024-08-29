@@ -35,17 +35,23 @@ export class User {
   @Column({ type: 'int', default: 1 })
   isActive: number;
 
+  @OneToMany(() => Tarea, (tarea) => tarea.creador)
+  tareasCreadas: Tarea[];
+
   @ManyToOne(() => Role, (role) => role.users, { eager: true })
   role: Role;
 
-  @ManyToOne(() => Sucursal, (sucursal) => sucursal.users, { eager: true })
+  @ManyToOne(() => Sucursal, (sucursal) => sucursal.users)
   sucursal: Sucursal;
 
-  @ManyToOne(() => Proyecto, (proyecto) => proyecto.usuarios, { eager: true })
-proyecto: Proyecto;
+  @ManyToOne(() => Proyecto, (proyecto) => proyecto.usuarios)
+  proyecto: Proyecto;
 
-@OneToMany(() => Tarea, (tarea) => tarea.usuario)
-tareas: Tarea[];
+  @OneToMany(() => Tarea, (tarea) => tarea.usuario)
+  tareas: Tarea[];
+
+  @OneToMany(() => Proyecto, (proyecto) => proyecto.creador)
+  proyectosCreados: Proyecto[];
 
   @BeforeInsert()
   checkCorreo() {

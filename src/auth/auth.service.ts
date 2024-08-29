@@ -17,6 +17,8 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from 'src/roles/entities/role.entity';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
+import { MailService } from 'src/mail/mail.service';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -27,7 +29,8 @@ export class AuthService {
     private readonly rolRepository: Repository<Role>,
     @InjectRepository(Sucursal)
     private readonly sucursalRepository: Repository<Sucursal>,
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    private readonly mailService: MailService
   ) {}
   async create(createUserDto: CreateUserDto) {
     try {
@@ -100,6 +103,36 @@ export class AuthService {
     } catch (error) {
       this.handleError(error);
     }
+  }
+
+  async sendMail(correo: string) {
+    console.log('CORREO', correo);
+
+    if (!correo)
+      throw new BadRequestException('No se proporciono un correo electronico');
+    try {
+      const response = await this.mailService.sendEmail(correo);
+      return response;
+    } catch (error) {
+      console.log(error);
+      this.handleError(error);
+    }
+  }
+
+  async actualizarContrasena(updatePassword: UpdatePasswordDto) {
+    const { correo, nuevaContrasena } = updatePassword;
+    const usuario = await this.userReository.findOne({ where: { correo } });
+
+    if (!usuario) {
+      throw new NotFoundException('El correo no existe en la base de datos');
+    }
+
+    const hashedPassword = await bcrypt.hash(nuevaContrasena, 10);
+    usuario.password = hashedPassword;
+
+    await this.mailService.sendEmailConfirm(correo, nuevaContrasena);
+    await this.userReository.save(usuario);
+    return 'Contraseña actualizada exitosamente';
   }
 
   private getJwtPayload(payload: JwtPayload) {

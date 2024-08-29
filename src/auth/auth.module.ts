@@ -11,10 +11,11 @@ import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { Tarea } from 'src/tareas/entities/tarea.entity';
 import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
+import { MailService } from 'src/mail/mail.service';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, MailService],
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([User, Sucursal, Role, Tarea, Proyecto]),
