@@ -15,17 +15,14 @@ export class Tarea {
 
   @Column({
     type: 'enum',
-    enum: ['Nueva', 'En Progreso', 'Finalizada'],
+    enum: ['Nueva', 'EnProgreso', 'Finalizada'],
     default: 'Nueva',
   })
   estado: string;
 
-  @ManyToOne(() => Proyecto, (proyecto) => proyecto.tareas)
+  @ManyToOne(() => Proyecto, (proyecto) => proyecto.tareas, { eager: true })
   proyecto: Proyecto;
 
-  @ManyToOne(() => User, (user) => user.tareas)
-  usuario: User;
-
-  @ManyToOne(() => User, (user) => user.tareasCreadas)
+  @ManyToOne(() => User, (user) => user.tareasCreadas, { eager: true })
   creador: User;
 }

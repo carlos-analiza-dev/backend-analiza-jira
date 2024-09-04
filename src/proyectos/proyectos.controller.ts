@@ -32,12 +32,23 @@ export class ProyectosController {
     return this.proyectosService.findAll(user);
   }
 
+  @Get()
+  @Auth()
+  findAllColaboradoresByIdProjecys(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() user: User
+  ) {
+    return this.proyectosService.findAllColaboradoresByIdProjecys(id, user);
+  }
+
   @Get(':id')
+  @Auth()
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.proyectosService.findOne(id);
   }
 
   @Patch(':id')
+  @Auth()
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProyectoDto: UpdateProyectoDto
@@ -46,6 +57,7 @@ export class ProyectosController {
   }
 
   @Delete(':id')
+  @Auth()
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.proyectosService.remove(id);
   }

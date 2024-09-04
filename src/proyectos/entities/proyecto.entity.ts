@@ -25,13 +25,13 @@ export class Proyecto {
 
   @Column({
     type: 'enum',
-    enum: ['En Progreso', 'Finalizada'],
+    enum: ['En Progreso', 'Finalizado'],
     default: 'En Progreso',
   })
   estado: string;
 
   @CreateDateColumn({ type: 'timestamp' })
-  fechaCreacion: Date;
+  fechaCreacion?: Date;
 
   @ManyToOne(() => User, (user) => user.proyectosCreados, { eager: true })
   creador: User;

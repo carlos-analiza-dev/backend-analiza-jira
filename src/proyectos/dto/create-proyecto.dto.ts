@@ -14,6 +14,6 @@ export class CreateProyectoDto {
   descripcion: string;
 
   @IsOptional()
-  @IsEnum(['En Progreso', 'Finalizada'])
+  @IsEnum(['En Progreso', 'Finalizado'])
   estado?: string;
 }

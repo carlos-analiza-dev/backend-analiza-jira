@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateProyectoDto } from './dto/create-proyecto.dto';
@@ -49,17 +50,64 @@ export class ProyectosService {
     }
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} proyecto`;
+  async findAllColaboradoresByIdProjecys(id: string, user: User) {}
+
+  async findOne(id: string) {
+    const proyecto = await this.pryectoRespository.findOne({ where: { id } });
+    try {
+      if (!proyecto)
+        throw new NotFoundException(
+          `No se encontraron proyectos con el id: ${id}`
+        );
+      return proyecto;
+    } catch (error) {
+      this.handleError(error);
+    }
   }
 
-  update(id: string, updateProyectoDto: UpdateProyectoDto) {
-    return `This action updates a #${id} proyecto`;
+  async update(id: string, updateProyectoDto: UpdateProyectoDto) {
+    try {
+      const proyectoId = await this.pryectoRespository.findOne({
+        where: { id },
+      });
+      if (!proyectoId)
+        throw new NotFoundException(
+          'No se encontro el proyecto que deseas actualizar'
+        );
+      await this.pryectoRespository.update(id, updateProyectoDto);
+      return 'Proyecto actualizado exitosamente';
+    } catch (error) {
+      console.log(error);
+      this.handleError(error);
+    }
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} proyecto`;
+  async remove(id: string) {
+    const proyectoDelete = await this.pryectoRespository.findOne({
+      where: { id },
+      relations: ['tareas'],
+    });
+    try {
+      if (!proyectoDelete)
+        throw new NotFoundException('No se encontro el proyecto a eliminar');
+      if (proyectoDelete.tareas && proyectoDelete.tareas.length > 0) {
+        await this.pryectoRespository.manager.remove(proyectoDelete.tareas);
+      }
+      await this.pryectoRespository.remove(proyectoDelete);
+      return 'Proyecto eliminado exitosamente';
+    } catch (error) {
+      console.log(error);
+      this.handleError(error);
+    }
   }
 
-  private handleError(error: any) {}
+  private handleError(error: any): never {
+    if (error.code === '23505') throw new BadRequestException(error.detail);
+
+    console.log(error);
+
+    throw new InternalServerErrorException(
+      'Hubo un error interno en el servidor, por favor revisalo'
+    );
+  }
 }

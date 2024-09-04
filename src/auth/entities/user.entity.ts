@@ -47,9 +47,6 @@ export class User {
   @ManyToOne(() => Proyecto, (proyecto) => proyecto.usuarios)
   proyecto: Proyecto;
 
-  @OneToMany(() => Tarea, (tarea) => tarea.usuario)
-  tareas: Tarea[];
-
   @OneToMany(() => Proyecto, (proyecto) => proyecto.creador)
   proyectosCreados: Proyecto[];
 
