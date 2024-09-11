@@ -19,6 +19,7 @@ import { Role } from 'src/roles/entities/role.entity';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { MailService } from 'src/mail/mail.service';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { CorreoDto } from './dto/correo-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -148,6 +149,7 @@ export class AuthService {
       .addSelect('role.nombre')
       .leftJoin('user.sucursal', 'sucursal')
       .addSelect('sucursal.nombre')
+
       .take(limit)
       .skip(offset);
     if (sexo) {
@@ -184,6 +186,22 @@ export class AuthService {
     }
 
     return users;
+  }
+
+  async obtenerUserByEmail(correoDto: CorreoDto) {
+    const { correo } = correoDto;
+    console.log('CORREO', correo);
+
+    try {
+      const obtenerUsuario = await this.userReository.findOneBy({ correo });
+      if (!obtenerUsuario)
+        throw new NotFoundException(
+          `No se encontro el usuario con el correo: ${correo}`
+        );
+      return obtenerUsuario;
+    } catch (error) {
+      this.handleError(error);
+    }
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {

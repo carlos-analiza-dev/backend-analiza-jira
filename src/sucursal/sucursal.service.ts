@@ -9,6 +9,7 @@ import { UpdateSucursalDto } from './dto/update-sucursal.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Sucursal } from './entities/sucursal.entity';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class SucursalService {
@@ -27,14 +28,17 @@ export class SucursalService {
     }
   }
 
-  async findAll() {
-    const allSucursals = await this.sucursalRepository.find({});
-    if (!allSucursals || allSucursals.length === 0)
-      throw new NotFoundException(
-        'No se encontraron sucursales en la base de datos'
-      );
-
-    return allSucursals;
+  async findAll(paginationDto: PaginationDto) {
+    const { limit = 5, offset = 0 } = paginationDto;
+    let quertSucursal = this.sucursalRepository
+      .createQueryBuilder('sucursal')
+      .skip(offset)
+      .limit(limit);
+    const sucursal = await quertSucursal.getMany();
+    if (!sucursal || sucursal.length === 0) {
+      throw new NotFoundException('No se encontraron sucursales disponibles');
+    }
+    return sucursal;
   }
 
   async findOne(id: string) {

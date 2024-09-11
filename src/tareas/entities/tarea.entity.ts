@@ -1,6 +1,13 @@
 import { User } from 'src/auth/entities/user.entity';
 import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('tareas')
 export class Tarea {
@@ -25,4 +32,10 @@ export class Tarea {
 
   @ManyToOne(() => User, (user) => user.tareasCreadas, { eager: true })
   creador: User;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
 }

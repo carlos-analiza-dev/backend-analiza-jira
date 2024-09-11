@@ -4,6 +4,8 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -36,7 +38,8 @@ export class Proyecto {
   @ManyToOne(() => User, (user) => user.proyectosCreados, { eager: true })
   creador: User;
 
-  @OneToMany(() => User, (user) => user.proyecto)
+  @ManyToMany(() => User, (user) => user.proyectos)
+  @JoinTable()
   usuarios: User[];
 
   @OneToMany(() => Tarea, (tarea) => tarea.proyecto)

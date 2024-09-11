@@ -2,12 +2,14 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Role } from './entities/role.entity';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class RolesService {
@@ -25,11 +27,16 @@ export class RolesService {
     }
   }
 
-  async findAll() {
+  async findAll(paginationDto: PaginationDto) {
+    const { limit = 5, offset = 0 } = paginationDto;
     try {
-      const roles = await this.rolRepository.find({});
+      let queryRoles = await this.rolRepository
+        .createQueryBuilder('role')
+        .take(limit)
+        .skip(offset);
+      const roles = await queryRoles.getMany();
       if (!roles || roles.length === 0) {
-        throw new BadRequestException('No se encontraron roles disponibles');
+        throw new NotFoundException('No se encontraron roles disponibles');
       }
       return roles;
     } catch (error) {

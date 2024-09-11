@@ -8,8 +8,7 @@ import {
   Delete,
   Query,
   ParseUUIDPipe,
-  UseGuards,
-  Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -18,13 +17,10 @@ import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { SendMailDto } from './dto/reset-password.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
-import { AuthGuard } from '@nestjs/passport';
-import { GetUser } from './decorators/get-user.decorator';
-import { User } from './entities/user.entity';
-import { UserRoleGuard } from './guards/user-role/user-role.guard';
-import { RoleProtected } from './decorators/role-protected/role-protected.decorator';
 import { ValidRoles } from 'src/interfaces/valid-roles';
 import { Auth } from './decorators/auth.decorator';
+import { CorreoDto } from './dto/correo-user.dto';
+import { User } from './entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -51,34 +47,21 @@ export class AuthController {
   }
 
   @Get('users')
+  @Auth(ValidRoles.Administrador)
   findAll(@Query() paginationDto: PaginationDto) {
     return this.authService.findAll(paginationDto);
   }
 
   @Get('autorizar')
+  @Auth(ValidRoles.Administrador)
   findAllAutorizar(@Query() paginationDto: PaginationDto) {
     return this.authService.findAllAutorizar(paginationDto);
   }
 
-  @Get('private')
-  @UseGuards(AuthGuard())
-  testingPrivateRoute(
-    /* @Req() request: Express.Request */ @GetUser() user: User
-  ) {
-    return { messsage: 'Desde Testing', user };
-  }
-
-  @Get('private2')
-  @RoleProtected(ValidRoles.gerente)
-  @UseGuards(AuthGuard(), UserRoleGuard)
-  testingPrivateRoute2(@GetUser() user: User) {
-    return { messsage: 'Desde Testing', user };
-  }
-
-  @Get('private3')
-  @Auth(ValidRoles.Administrador)
-  testingPrivateRoute3(@GetUser() user: User) {
-    return { messsage: 'Desde Testing', user };
+  @Post('colaborador')
+  @Auth()
+  findOneByEmail(@Body() correoDto: CorreoDto) {
+    return this.authService.obtenerUserByEmail(correoDto);
   }
 
   @Get(':id')

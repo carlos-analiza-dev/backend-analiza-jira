@@ -10,12 +10,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Proyecto } from './entities/proyecto.entity';
 import { Repository } from 'typeorm';
 import { User } from 'src/auth/entities/user.entity';
+import { ColaboradorDTO } from './dto/colaborador.dto';
 
 @Injectable()
 export class ProyectosService {
   constructor(
     @InjectRepository(Proyecto)
-    private readonly pryectoRespository: Repository<Proyecto>
+    private readonly pryectoRespository: Repository<Proyecto>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>
   ) {}
   async create(createProyectoDto: CreateProyectoDto, user: User) {
     const { nombre, cliente, descripcion, estado } = createProyectoDto;
@@ -37,6 +40,46 @@ export class ProyectosService {
     }
   }
 
+  async addColaborador(proyectoId: string, userId: string, user: User) {
+    try {
+      const proyecto = await this.pryectoRespository.findOne({
+        where: { id: proyectoId },
+        relations: ['usuarios'],
+      });
+
+      if (!proyecto) {
+        throw new NotFoundException('No se encontró el proyecto');
+      }
+
+      const colaborador = await this.userRepository.findOne({
+        where: { id: userId },
+      });
+
+      if (!colaborador) {
+        throw new NotFoundException('No se encontró el colaborador');
+      }
+
+      if (proyecto.creador.id === userId) {
+        throw new BadRequestException(
+          'El creador del proyecto no puede ser un colaborador'
+        );
+      }
+
+      if (proyecto.usuarios.some((u) => u.id === colaborador.id)) {
+        throw new BadRequestException(
+          'El colaborador ya forma parte del proyecto'
+        );
+      }
+
+      proyecto.usuarios.push(colaborador);
+      await this.pryectoRespository.save(proyecto);
+
+      return { message: 'Colaborador agregado exitosamente' };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findAll(user: User) {
     try {
       const proyectos = await this.pryectoRespository.find({
@@ -50,7 +93,26 @@ export class ProyectosService {
     }
   }
 
-  async findAllColaboradoresByIdProjecys(id: string, user: User) {}
+  async getColaboradoresByProjectId(proyectoId: string, user: User) {
+    try {
+      const proyecto = await this.pryectoRespository.findOne({
+        where: { id: proyectoId },
+        relations: ['usuarios'],
+      });
+
+      if (!proyecto) {
+        throw new NotFoundException('No se encontró el proyecto');
+      }
+
+      const colaboradores = proyecto.usuarios.filter(
+        (colaborador) => colaborador.id !== proyecto.creador.id
+      );
+
+      return colaboradores;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
 
   async findOne(id: string) {
     const proyecto = await this.pryectoRespository.findOne({ where: { id } });
@@ -60,6 +122,30 @@ export class ProyectosService {
           `No se encontraron proyectos con el id: ${id}`
         );
       return proyecto;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  async findAllProyectos(user: User) {
+    try {
+      const proyectosCreados = await this.pryectoRespository.find({
+        where: { creador: user },
+      });
+
+      const proyectosColaborador = await this.pryectoRespository
+        .createQueryBuilder('proyecto')
+        .innerJoinAndSelect('proyecto.usuarios', 'usuarios')
+        .where('usuarios.id = :userId', { userId: user.id })
+        .getMany();
+
+      const todosProyectos = [...proyectosCreados, ...proyectosColaborador];
+
+      if (!todosProyectos.length) {
+        throw new NotFoundException('No estás en ningún proyecto');
+      }
+
+      return todosProyectos;
     } catch (error) {
       this.handleError(error);
     }
@@ -80,6 +166,26 @@ export class ProyectosService {
       console.log(error);
       this.handleError(error);
     }
+  }
+
+  async deleteColaborador(proyectoId: string, userId: string, user: User) {
+    console.log(proyectoId);
+
+    const proyecto = await this.pryectoRespository.findOne({
+      where: { id: proyectoId },
+      relations: ['usuarios'],
+    });
+    if (!proyecto) throw new NotFoundException('No se encontro el proyecto');
+
+    const colaborador = proyecto.usuarios.find((u) => u.id === userId);
+    if (!colaborador)
+      throw new NotFoundException('No se encontro el colaborador a eliminar');
+
+    proyecto.usuarios = proyecto.usuarios.filter((u) => u.id !== userId);
+
+    await this.pryectoRespository.save(proyecto);
+
+    return { message: 'Colaborador eliminado exitosamente' };
   }
 
   async remove(id: string) {

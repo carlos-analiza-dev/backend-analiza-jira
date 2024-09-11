@@ -15,6 +15,7 @@ import { User } from 'src/auth/entities/user.entity';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { ValidRoles } from 'src/interfaces/valid-roles';
+import { ColaboradorDTO } from './dto/colaborador.dto';
 
 @Controller('proyectos')
 export class ProyectosController {
@@ -26,19 +27,35 @@ export class ProyectosController {
     return this.proyectosService.create(createProyectoDto, user);
   }
 
+  @Post(':id/colaborador')
+  @Auth()
+  addColaborador(
+    @Param('id', ParseUUIDPipe) proyectoId: string,
+    @Body('userId', ParseUUIDPipe) userId: string,
+    @GetUser() user: User
+  ) {
+    return this.proyectosService.addColaborador(proyectoId, userId, user);
+  }
+
+  @Get('/mis-proyectos')
+  @Auth()
+  findAllProyectos(@GetUser() user: User) {
+    return this.proyectosService.findAllProyectos(user);
+  }
+
   @Get()
   @Auth()
   findAll(@GetUser() user: User) {
     return this.proyectosService.findAll(user);
   }
 
-  @Get()
+  @Get(':id/colaborador')
   @Auth()
-  findAllColaboradoresByIdProjecys(
-    @Param('id', ParseUUIDPipe) id: string,
+  getColaboradoresByProjectId(
+    @Param('id', ParseUUIDPipe) proyectoId: string,
     @GetUser() user: User
   ) {
-    return this.proyectosService.findAllColaboradoresByIdProjecys(id, user);
+    return this.proyectosService.getColaboradoresByProjectId(proyectoId, user);
   }
 
   @Get(':id')
@@ -54,6 +71,16 @@ export class ProyectosController {
     @Body() updateProyectoDto: UpdateProyectoDto
   ) {
     return this.proyectosService.update(id, updateProyectoDto);
+  }
+
+  @Delete(':proyectoId/:userId/colaborador')
+  @Auth()
+  deleteColaborador(
+    @Param('proyectoId', ParseUUIDPipe) proyectoId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    user: User
+  ) {
+    return this.proyectosService.deleteColaborador(proyectoId, userId, user);
   }
 
   @Delete(':id')

@@ -7,6 +7,7 @@ import {
   BeforeUpdate,
   Column,
   Entity,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -44,8 +45,8 @@ export class User {
   @ManyToOne(() => Sucursal, (sucursal) => sucursal.users)
   sucursal: Sucursal;
 
-  @ManyToOne(() => Proyecto, (proyecto) => proyecto.usuarios)
-  proyecto: Proyecto;
+  @ManyToMany(() => Proyecto, (proyecto) => proyecto.usuarios)
+  proyectos: Proyecto[];
 
   @OneToMany(() => Proyecto, (proyecto) => proyecto.creador)
   proyectosCreados: Proyecto[];
