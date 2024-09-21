@@ -73,13 +73,14 @@ export class TareasService {
     return `This action returns a #${id} tarea`;
   }
 
-  async update(id: string, updateTareaDto: UpdateTareaDto) {
+  async update(id: string, updateTareaDto: UpdateTareaDto, user: User) {
     const tarea = await this.tareaRepository.findOne({ where: { id } });
     if (!tarea) {
       throw new NotFoundException('Tarea no encontrada');
     }
 
     Object.assign(tarea, updateTareaDto);
+    tarea.actualizadoPor = user;
     return this.tareaRepository.save(tarea);
   }
 

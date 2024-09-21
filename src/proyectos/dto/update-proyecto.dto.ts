@@ -25,4 +25,7 @@ export class UpdateProyectoDto {
 
   @IsOptional()
   creador?: {};
+
+  @IsOptional()
+  responsableId?: string;
 }

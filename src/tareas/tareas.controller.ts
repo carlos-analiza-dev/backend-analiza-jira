@@ -41,9 +41,10 @@ export class TareasController {
   @Auth()
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateTareaDto: UpdateTareaDto
+    @Body() updateTareaDto: UpdateTareaDto,
+    @GetUser() user: User
   ) {
-    return this.tareasService.update(id, updateTareaDto);
+    return this.tareasService.update(id, updateTareaDto, user);
   }
 
   @Delete(':id')

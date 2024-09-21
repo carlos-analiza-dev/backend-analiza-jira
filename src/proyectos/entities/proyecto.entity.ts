@@ -38,10 +38,13 @@ export class Proyecto {
   @ManyToOne(() => User, (user) => user.proyectosCreados, { eager: true })
   creador: User;
 
-  @ManyToMany(() => User, (user) => user.proyectos)
+  @ManyToMany(() => User, (user) => user.proyectos, { eager: true })
   @JoinTable()
   usuarios: User[];
 
   @OneToMany(() => Tarea, (tarea) => tarea.proyecto)
   tareas: Tarea[];
+
+  @ManyToOne(() => User, { eager: true })
+  responsable: User;
 }

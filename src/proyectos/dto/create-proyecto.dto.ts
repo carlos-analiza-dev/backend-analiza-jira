@@ -1,4 +1,10 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateProyectoDto {
   @IsNotEmpty()
@@ -16,4 +22,8 @@ export class CreateProyectoDto {
   @IsOptional()
   @IsEnum(['En Progreso', 'Finalizado'])
   estado?: string;
+
+  @IsOptional()
+  @IsUUID()
+  responsableId?: string;
 }

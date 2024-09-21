@@ -33,6 +33,9 @@ export class Tarea {
   @ManyToOne(() => User, (user) => user.tareasCreadas, { eager: true })
   creador: User;
 
+  @ManyToOne(() => User, { eager: true, nullable: true })
+  actualizadoPor: User;
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 

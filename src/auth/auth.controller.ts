@@ -52,10 +52,28 @@ export class AuthController {
     return this.authService.findAll(paginationDto);
   }
 
+  @Get('active-users')
+  @Auth(ValidRoles.Administrador)
+  findAllActiveUsers() {
+    return this.authService.findAllActiveUsers();
+  }
+
+  @Get('users-sucursal')
+  @Auth(ValidRoles.Administrador)
+  findAllUsersBySucursal() {
+    return this.authService.findAllUsersBySucursal();
+  }
+
   @Get('autorizar')
   @Auth(ValidRoles.Administrador)
-  findAllAutorizar(@Query() paginationDto: PaginationDto) {
+  findAllUserAutorizados(@Query() paginationDto: PaginationDto) {
     return this.authService.findAllAutorizar(paginationDto);
+  }
+
+  @Get('autorizado')
+  @Auth(ValidRoles.Administrador)
+  findAllAutorizar() {
+    return this.authService.findAllUserAutorizados();
   }
 
   @Post('colaborador')

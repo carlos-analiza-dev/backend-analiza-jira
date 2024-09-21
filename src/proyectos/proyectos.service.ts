@@ -10,7 +10,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Proyecto } from './entities/proyecto.entity';
 import { Repository } from 'typeorm';
 import { User } from 'src/auth/entities/user.entity';
-import { ColaboradorDTO } from './dto/colaborador.dto';
 
 @Injectable()
 export class ProyectosService {
@@ -21,14 +20,24 @@ export class ProyectosService {
     private readonly userRepository: Repository<User>
   ) {}
   async create(createProyectoDto: CreateProyectoDto, user: User) {
-    const { nombre, cliente, descripcion, estado } = createProyectoDto;
+    const { nombre, cliente, descripcion, estado, responsableId } =
+      createProyectoDto;
     try {
+      const responsable = await this.userRepository.findOne({
+        where: { id: responsableId },
+      });
+      if (!responsable) {
+        throw new NotFoundException(
+          `No se encontro el responsable con id: ${responsableId}`
+        );
+      }
       const proyecto = this.pryectoRespository.create({
         nombre: nombre,
         cliente: cliente,
         descripcion: descripcion,
         estado: estado,
         creador: user,
+        responsable: responsable,
       });
       if (!proyecto) {
         throw new BadRequestException('Ocurrio un error al crear el proyecto');
@@ -65,6 +74,12 @@ export class ProyectosService {
         );
       }
 
+      if (proyecto.responsable.id === userId) {
+        throw new BadRequestException(
+          'El responsable del proyecto no puede ser un colaborador'
+        );
+      }
+
       if (proyecto.usuarios.some((u) => u.id === colaborador.id)) {
         throw new BadRequestException(
           'El colaborador ya forma parte del proyecto'
@@ -91,6 +106,20 @@ export class ProyectosService {
     } catch (error) {
       console.log(error);
     }
+  }
+
+  async findAllStatusProyectos() {
+    const proyectosProgress = await this.pryectoRespository.find({
+      where: { estado: 'En Progreso' },
+    });
+    const proyectosFinally = await this.pryectoRespository.find({
+      where: { estado: 'Finalizado' },
+    });
+
+    return {
+      progreso: proyectosProgress.length,
+      finalizado: proyectosFinally.length,
+    };
   }
 
   async getColaboradoresByProjectId(proyectoId: string, user: User) {
@@ -121,6 +150,8 @@ export class ProyectosService {
         throw new NotFoundException(
           `No se encontraron proyectos con el id: ${id}`
         );
+      console.log(proyecto);
+
       return proyecto;
     } catch (error) {
       this.handleError(error);
@@ -129,23 +160,21 @@ export class ProyectosService {
 
   async findAllProyectos(user: User) {
     try {
-      const proyectosCreados = await this.pryectoRespository.find({
-        where: { creador: user },
-      });
-
-      const proyectosColaborador = await this.pryectoRespository
+      const proyectos = await this.pryectoRespository
         .createQueryBuilder('proyecto')
-        .innerJoinAndSelect('proyecto.usuarios', 'usuarios')
-        .where('usuarios.id = :userId', { userId: user.id })
+        .leftJoinAndSelect('proyecto.creador', 'creador')
+        .leftJoinAndSelect('proyecto.usuarios', 'usuarios')
+        .leftJoinAndSelect('proyecto.responsable', 'responsable')
+        .where('creador.id = :userId', { userId: user.id })
+        .orWhere('usuarios.id = :userId', { userId: user.id })
+        .orWhere('responsable.id = :userId', { userId: user.id })
         .getMany();
 
-      const todosProyectos = [...proyectosCreados, ...proyectosColaborador];
-
-      if (!todosProyectos.length) {
+      if (!proyectos.length) {
         throw new NotFoundException('No estás en ningún proyecto');
       }
 
-      return todosProyectos;
+      return proyectos;
     } catch (error) {
       this.handleError(error);
     }
@@ -163,7 +192,6 @@ export class ProyectosService {
       await this.pryectoRespository.update(id, updateProyectoDto);
       return 'Proyecto actualizado exitosamente';
     } catch (error) {
-      console.log(error);
       this.handleError(error);
     }
   }

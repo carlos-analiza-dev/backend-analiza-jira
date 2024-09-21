@@ -15,8 +15,6 @@ import { User } from 'src/auth/entities/user.entity';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { ValidRoles } from 'src/interfaces/valid-roles';
-import { ColaboradorDTO } from './dto/colaborador.dto';
-
 @Controller('proyectos')
 export class ProyectosController {
   constructor(private readonly proyectosService: ProyectosService) {}
@@ -47,6 +45,12 @@ export class ProyectosController {
   @Auth()
   findAll(@GetUser() user: User) {
     return this.proyectosService.findAll(user);
+  }
+
+  @Get('status')
+  @Auth(ValidRoles.Administrador)
+  findAllStatusProyectos() {
+    return this.proyectosService.findAllStatusProyectos();
   }
 
   @Get(':id/colaborador')

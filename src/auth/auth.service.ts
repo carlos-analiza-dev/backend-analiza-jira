@@ -190,7 +190,6 @@ export class AuthService {
 
   async obtenerUserByEmail(correoDto: CorreoDto) {
     const { correo } = correoDto;
-    console.log('CORREO', correo);
 
     try {
       const obtenerUsuario = await this.userReository.findOneBy({ correo });
@@ -213,6 +212,50 @@ export class AuthService {
     Object.assign(user, updateUserDto);
 
     return this.userReository.save(user);
+  }
+
+  async findAllActiveUsers() {
+    const usuariosActivos = await this.userReository.find({
+      where: { isActive: 1 },
+    });
+    const usuariosInactivos = await this.userReository.find({
+      where: { isActive: 0 },
+    });
+    return {
+      activos: usuariosActivos.length,
+      inactivos: usuariosInactivos.length,
+    };
+  }
+
+  async findAllUsersBySucursal() {
+    try {
+      const usersBySucursal = await this.userReository
+        .createQueryBuilder('user')
+        .where('user.isActive = :isActive', { isActive: 1 })
+        .leftJoinAndSelect('user.sucursal', 'sucursal')
+        .select('sucursal.nombre', 'sucursal')
+        .addSelect('COUNT(user.id)', 'cantidadUsuarios')
+        .groupBy('sucursal.nombre')
+        .getRawMany();
+
+      return usersBySucursal;
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  async findAllUserAutorizados() {
+    const usersAutorizados = await this.userReository.find({
+      where: { autorizado: 1 },
+    });
+    const usersNoAutorizados = await this.userReository.find({
+      where: { autorizado: 0 },
+    });
+
+    return {
+      autorizado: usersAutorizados.length,
+      no_autorizado: usersNoAutorizados.length,
+    };
   }
 
   async findOne(id: string) {
