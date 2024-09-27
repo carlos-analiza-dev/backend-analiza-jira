@@ -84,6 +84,7 @@ export class AuthService {
           isActive: true,
           autorizado: true,
           nombre: true,
+          rol: true,
           dni: true,
           id: true,
         },
@@ -107,15 +108,12 @@ export class AuthService {
   }
 
   async sendMail(correo: string) {
-    console.log('CORREO', correo);
-
     if (!correo)
       throw new BadRequestException('No se proporciono un correo electronico');
     try {
       const response = await this.mailService.sendEmail(correo);
       return response;
     } catch (error) {
-      console.log(error);
       this.handleError(error);
     }
   }
@@ -188,19 +186,23 @@ export class AuthService {
     return users;
   }
 
-  async obtenerUserByEmail(correoDto: CorreoDto) {
+  async obtenerUserByEmail(correoDto: CorreoDto, user: User) {
     const { correo } = correoDto;
-
-    try {
-      const obtenerUsuario = await this.userReository.findOneBy({ correo });
-      if (!obtenerUsuario)
-        throw new NotFoundException(
-          `No se encontro el usuario con el correo: ${correo}`
-        );
-      return obtenerUsuario;
-    } catch (error) {
-      this.handleError(error);
+    if (!user?.correo || !correo) {
+      throw new BadRequestException('Datos inválidos');
     }
+
+    if (user.correo.trim().toLowerCase() === correo.trim().toLowerCase()) {
+      throw new BadRequestException('No es posible asignarte ti mismo');
+    }
+
+    const obtenerUsuario = await this.userReository.findOneBy({ correo });
+    if (!obtenerUsuario)
+      throw new NotFoundException(
+        `No se encontro el usuario con el correo: ${correo}`
+      );
+
+    return obtenerUsuario;
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {

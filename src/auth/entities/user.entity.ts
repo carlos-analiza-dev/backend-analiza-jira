@@ -1,7 +1,9 @@
+import { Evento } from 'src/evento/entities/evento.entity';
 import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { Tarea } from 'src/tareas/entities/tarea.entity';
+import { UserRole } from 'src/types/user.role.type';
 import {
   BeforeInsert,
   BeforeUpdate,
@@ -36,6 +38,9 @@ export class User {
   @Column({ type: 'int', default: 1 })
   isActive: number;
 
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
+  rol: UserRole;
+
   @OneToMany(() => Tarea, (tarea) => tarea.creador)
   tareasCreadas: Tarea[];
 
@@ -45,11 +50,21 @@ export class User {
   @ManyToOne(() => Sucursal, (sucursal) => sucursal.users)
   sucursal: Sucursal;
 
+  @OneToMany(() => Evento, (evento) => evento.usuarioCreador)
+  eventos: Evento[];
+
   @ManyToMany(() => Proyecto, (proyecto) => proyecto.usuarios)
   proyectos: Proyecto[];
 
   @OneToMany(() => Proyecto, (proyecto) => proyecto.creador)
   proyectosCreados: Proyecto[];
+
+  @BeforeInsert()
+  setDefaultRole() {
+    if (!this.role) {
+      this.rol = UserRole.USER;
+    }
+  }
 
   @BeforeInsert()
   checkCorreo() {

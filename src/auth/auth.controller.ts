@@ -21,6 +21,7 @@ import { ValidRoles } from 'src/interfaces/valid-roles';
 import { Auth } from './decorators/auth.decorator';
 import { CorreoDto } from './dto/correo-user.dto';
 import { User } from './entities/user.entity';
+import { GetUser } from './decorators/get-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -78,8 +79,8 @@ export class AuthController {
 
   @Post('colaborador')
   @Auth()
-  findOneByEmail(@Body() correoDto: CorreoDto) {
-    return this.authService.obtenerUserByEmail(correoDto);
+  findOneByEmail(@Body() correoDto: CorreoDto, @GetUser() user: User) {
+    return this.authService.obtenerUserByEmail(correoDto, user);
   }
 
   @Get(':id')

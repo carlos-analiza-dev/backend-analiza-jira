@@ -23,7 +23,7 @@ export class CreateProyectoDto {
   @IsEnum(['En Progreso', 'Finalizado'])
   estado?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsUUID()
-  responsableId?: string;
+  responsableId: string;
 }

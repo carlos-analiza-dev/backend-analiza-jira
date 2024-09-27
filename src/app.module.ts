@@ -10,6 +10,7 @@ import { SucursalModule } from './sucursal/sucursal.module';
 import { ProyectosModule } from './proyectos/proyectos.module';
 import { TareasModule } from './tareas/tareas.module';
 import { MailModule } from './mail/mail.module';
+import { EventoModule } from './evento/evento.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { MailModule } from './mail/mail.module';
     ProyectosModule,
     TareasModule,
     MailModule,
+    EventoModule,
   ],
   controllers: [AppController],
   providers: [AppService],

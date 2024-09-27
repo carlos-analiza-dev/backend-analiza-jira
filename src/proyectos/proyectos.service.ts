@@ -45,7 +45,7 @@ export class ProyectosService {
       await this.pryectoRespository.save(proyecto);
       return proyecto;
     } catch (error) {
-      console.log(error);
+      throw error;
     }
   }
 
