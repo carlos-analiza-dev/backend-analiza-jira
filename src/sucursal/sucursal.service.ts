@@ -29,16 +29,42 @@ export class SucursalService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { limit = 5, offset = 0 } = paginationDto;
-    let quertSucursal = this.sucursalRepository
+    const { limit = 5, offset = 0, departamento } = paginationDto;
+
+    let querySucursal = this.sucursalRepository
       .createQueryBuilder('sucursal')
       .skip(offset)
-      .limit(limit);
-    const sucursal = await quertSucursal.getMany();
-    if (!sucursal || sucursal.length === 0) {
+      .take(limit);
+
+    if (departamento) {
+      querySucursal = querySucursal.where(
+        'sucursal.departamento = :departamento',
+        { departamento }
+      );
+    }
+
+    const [sucursales, total] = await querySucursal.getManyAndCount();
+
+    if (!sucursales || sucursales.length === 0) {
       throw new NotFoundException('No se encontraron sucursales disponibles');
     }
-    return sucursal;
+
+    return {
+      data: sucursales,
+      total,
+    };
+  }
+
+  async findAllSucursales() {
+    try {
+      const sucursales = await this.sucursalRepository.find({});
+      if (!sucursales || sucursales.length === 0) {
+        throw new NotFoundException('No se encontraron sucursales disponibles');
+      }
+      return sucursales;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async findOne(id: string) {

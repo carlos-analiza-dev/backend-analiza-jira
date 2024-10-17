@@ -5,7 +5,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
 } from 'class-validator';
 
 export class CreateEventoDto {
@@ -32,6 +31,10 @@ export class CreateEventoDto {
   tipoEvento: string;
 
   @IsOptional()
-  @IsEnum(['Activo', 'Cancelado', 'Pospuesto'])
+  @IsEnum(['Activo', 'Finalizado', 'Pospuesto'])
   estado?: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'El responsable del evento es obligatorio' })
+  responsableId: string;
 }

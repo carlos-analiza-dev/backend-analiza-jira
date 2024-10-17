@@ -1,5 +1,7 @@
 import { User } from 'src/auth/entities/user.entity';
+import { Role } from 'src/roles/entities/role.entity';
 import { Tarea } from 'src/tareas/entities/tarea.entity';
+
 import {
   Column,
   CreateDateColumn,
@@ -47,4 +49,7 @@ export class Proyecto {
 
   @ManyToOne(() => User, { eager: true })
   responsable: User;
+
+  @ManyToOne(() => Role, (role) => role.proyectos, { eager: true })
+  rolDirigido: Role;
 }

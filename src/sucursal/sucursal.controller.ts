@@ -27,8 +27,14 @@ export class SucursalController {
   }
 
   @Get()
+  @Auth(ValidRoles.Administrador)
   findAll(@Query() paginationDto: PaginationDto) {
     return this.sucursalService.findAll(paginationDto);
+  }
+
+  @Get('sucursales')
+  findAllSucursales() {
+    return this.sucursalService.findAllSucursales();
   }
 
   @Get(':id')

@@ -1,8 +1,11 @@
+import { Actividade } from 'src/actividades/entities/actividade.entity';
 import { User } from 'src/auth/entities/user.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -35,7 +38,7 @@ export class Evento {
 
   @Column({
     type: 'enum',
-    enum: ['Activo', 'Cancelado', 'Pospuesto'],
+    enum: ['Activo', 'Finalizado', 'Pospuesto'],
     default: 'Activo',
   })
   estado?: string;
@@ -46,6 +49,16 @@ export class Evento {
   @UpdateDateColumn()
   actualizadoEn: Date;
 
-  @ManyToOne(() => User, (user) => user.eventos)
+  @ManyToOne(() => User, (user) => user.eventos, { eager: true })
   usuarioCreador: User;
+
+  @ManyToMany(() => User, (user) => user.evento, { eager: true })
+  @JoinTable()
+  usuarios: User[];
+
+  @ManyToOne(() => User, { eager: true })
+  responsable: User;
+
+  @OneToMany(() => Actividade, (actividad) => actividad.evento)
+  actividad: Actividade[];
 }

@@ -6,7 +6,7 @@ import {
   IsUUID,
 } from 'class-validator';
 
-export class CreateTareaDto {
+export class CreateActividadeDto {
   @IsString({ message: 'Solo se permiten letras en el campo' })
   @IsNotEmpty()
   titulo: string;
@@ -21,9 +21,9 @@ export class CreateTareaDto {
 
   @IsUUID()
   @IsNotEmpty()
-  proyectoId: string;
+  usuarioAsignado: string;
 
   @IsUUID()
   @IsNotEmpty()
-  usuarioAsignado: string;
+  eventoId: string;
 }

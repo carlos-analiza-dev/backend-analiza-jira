@@ -29,18 +29,40 @@ export class RolesService {
 
   async findAll(paginationDto: PaginationDto) {
     const { limit = 5, offset = 0 } = paginationDto;
+
     try {
-      let queryRoles = await this.rolRepository
+      const [roles, total] = await this.rolRepository
         .createQueryBuilder('role')
         .take(limit)
-        .skip(offset);
-      const roles = await queryRoles.getMany();
+        .skip(offset)
+        .getManyAndCount();
+
       if (!roles || roles.length === 0) {
-        throw new NotFoundException('No se encontraron roles disponibles');
+        throw new NotFoundException(
+          'No se encontraron departamentos disponibles'
+        );
       }
-      return roles;
+
+      return {
+        data: roles,
+        total,
+      };
     } catch (error) {
       this.handleError(error);
+    }
+  }
+
+  async findAllRoles() {
+    try {
+      const departamentos = await this.rolRepository.find({});
+      if (!departamentos || departamentos.length === 0) {
+        throw new BadRequestException(
+          'No se encontraron departamentos disponibles'
+        );
+      }
+      return departamentos;
+    } catch (error) {
+      throw error;
     }
   }
 
@@ -49,7 +71,7 @@ export class RolesService {
       const rol = this.rolRepository.findOne({ where: { id } });
       if (!rol)
         throw new BadRequestException(
-          `No se pudo encontrar el rol con el id:${id}`
+          `No se pudo encontrar el departamento con el id:${id}`
         );
       return rol;
     } catch (error) {
@@ -61,11 +83,11 @@ export class RolesService {
     const roleUpdate = await this.rolRepository.findOne({ where: { id } });
     if (!roleUpdate)
       throw new BadRequestException(
-        'El rol que deseas actualizar no existe en la base de datos'
+        'El departamento que deseas actualizar no existe en la base de datos'
       );
     try {
       await this.rolRepository.update(id, updateRoleDto);
-      return `El rol con id:${id} actualizado exitosamente`;
+      return `El departamento con id:${id} actualizado exitosamente`;
     } catch (error) {
       this.handleError(error);
     }
@@ -75,10 +97,10 @@ export class RolesService {
     const rolDelete = await this.rolRepository.findOne({ where: { id } });
     if (!rolDelete)
       throw new BadRequestException(
-        'El ROL que intentas eliminar no se encuentra en la base de datos'
+        'El departamento que intentas eliminar no se encuentra en la base de datos'
       );
     await this.rolRepository.delete(id);
-    return `Rol Eliminado exitosamente`;
+    return `Departamento Eliminado exitosamente`;
   }
   private handleError(error: any) {
     if (error.code === '23505') throw new BadRequestException(error.detail);

@@ -62,6 +62,15 @@ export class ProyectosController {
     return this.proyectosService.getColaboradoresByProjectId(proyectoId, user);
   }
 
+  @Get(':id/colaboradorByProject')
+  @Auth()
+  getColaboradoresProjectId(
+    @Param('id', ParseUUIDPipe) proyectoId: string,
+    @GetUser() user: User
+  ) {
+    return this.proyectosService.getColaboradoresProjectId(proyectoId, user);
+  }
+
   @Get(':id')
   @Auth()
   findOne(@Param('id', ParseUUIDPipe) id: string) {

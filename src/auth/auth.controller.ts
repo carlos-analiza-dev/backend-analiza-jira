@@ -49,8 +49,44 @@ export class AuthController {
 
   @Get('users')
   @Auth(ValidRoles.Administrador)
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.authService.findAll(paginationDto);
+  findAll(@Query() paginationDto: PaginationDto, @GetUser() user: User) {
+    return this.authService.findAll(paginationDto, user);
+  }
+
+  @Get('Allusers')
+  @Auth(ValidRoles.Administrador)
+  findAllUsers() {
+    return this.authService.findAllUsers();
+  }
+
+  @Get('usersActives')
+  @Auth()
+  findAllUsersActive(@GetUser() user: User) {
+    return this.authService.findAllUsersActive(user);
+  }
+
+  @Get('usersByEventos/:eventoId')
+  @Auth()
+  findAllUsersByEventos(@Param('eventoId') eventoId: string) {
+    return this.authService.findAllUsersByEventos(eventoId);
+  }
+
+  @Get('usersByEmail')
+  @Auth(ValidRoles.Administrador)
+  findAllByEmail(@Query() sendMailDto: SendMailDto) {
+    return this.authService.findByEmail(sendMailDto);
+  }
+
+  @Get('usersByRol')
+  @Auth(ValidRoles.Administrador)
+  findAllByRol(@Query() paginationDto: PaginationDto) {
+    return this.authService.findAllByRol(paginationDto);
+  }
+
+  @Get('usersByProjectRole/:projectId')
+  @Auth()
+  async getUsersByProjectRole(@Param('projectId') projectId: string) {
+    return this.authService.findUsersByProjectRole(projectId);
   }
 
   @Get('active-users')
@@ -89,6 +125,7 @@ export class AuthController {
   }
 
   @Patch(':id')
+  @Auth()
   async updateUser(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateUserDto: UpdateUserDto

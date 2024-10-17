@@ -20,6 +20,9 @@ import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { MailService } from 'src/mail/mail.service';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { CorreoDto } from './dto/correo-user.dto';
+import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
+import { SendMailDto } from './dto/reset-password.dto';
+import { Evento } from 'src/evento/entities/evento.entity';
 
 @Injectable()
 export class AuthService {
@@ -30,6 +33,10 @@ export class AuthService {
     private readonly rolRepository: Repository<Role>,
     @InjectRepository(Sucursal)
     private readonly sucursalRepository: Repository<Sucursal>,
+    @InjectRepository(Proyecto)
+    private readonly proyectoRepository: Repository<Proyecto>,
+    @InjectRepository(Evento)
+    private readonly eventoRepository: Repository<Evento>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService
   ) {}
@@ -69,7 +76,7 @@ export class AuthService {
       delete user.password;
       return { ...user, token: this.getJwtPayload({ id: user.id }) };
     } catch (error) {
-      this.handleError(error);
+      throw error;
     }
   }
 
@@ -100,11 +107,49 @@ export class AuthService {
         throw new UnauthorizedException(
           'No has sido autorizado por el administrador'
         );
+
+      if (user.isActive === 0) {
+        throw new UnauthorizedException(
+          'No has sido activado por el administrador'
+        );
+      }
       delete user.password;
       return { ...user, token: this.getJwtPayload({ id: user.id }) };
     } catch (error) {
-      this.handleError(error);
+      throw error;
     }
+  }
+
+  async findUsersByProjectRole(projectId: string) {
+    const proyecto = await this.proyectoRepository.findOne({
+      where: { id: projectId },
+      relations: ['rolDirigido', 'responsable'],
+    });
+
+    if (!proyecto) {
+      throw new NotFoundException(`Proyecto con id ${projectId} no encontrado`);
+    }
+
+    const { rolDirigido, responsable } = proyecto;
+
+    const users = await this.userReository.find({
+      where: {
+        role: rolDirigido,
+        isActive: 1,
+        autorizado: 1,
+      },
+      relations: ['role'],
+    });
+
+    if (!users.length) {
+      throw new NotFoundException(
+        `No se encontraron usuarios con el departamento del proyecto ${projectId}`
+      );
+    }
+
+    const filteredUsers = users.filter((user) => user.id !== responsable.id);
+
+    return filteredUsers;
   }
 
   async sendMail(correo: string) {
@@ -139,37 +184,242 @@ export class AuthService {
     return token;
   }
 
-  async findAll(paginationDto: PaginationDto) {
-    const { limit = 5, offset = 0, sexo } = paginationDto;
+  async findAll(paginationDto: PaginationDto, user: User) {
+    const {
+      limit = 5,
+      offset = 0,
+      sexo,
+      sucursal,
+      role,
+      correo,
+    } = paginationDto;
+
     let queryUsers = this.userReository
       .createQueryBuilder('user')
       .leftJoin('user.role', 'role')
       .addSelect('role.nombre')
       .leftJoin('user.sucursal', 'sucursal')
       .addSelect('sucursal.nombre')
-
       .take(limit)
-      .skip(offset);
+      .skip(offset)
+      .where('user.id != :userId', { userId: user.id }); // Excluir el usuario activo
+
     if (sexo) {
-      queryUsers = queryUsers.where('user.sexo = :sexo', { sexo });
+      queryUsers = queryUsers.andWhere('user.sexo = :sexo', { sexo });
     }
+
+    if (sucursal) {
+      queryUsers = queryUsers.andWhere('sucursal.nombre = :sucursal', {
+        sucursal,
+      });
+    }
+
+    if (role) {
+      queryUsers = queryUsers.andWhere('role.nombre = :role', { role });
+    }
+
+    if (correo) {
+      queryUsers = queryUsers.andWhere('user.correo = :correo', { correo });
+    }
+
     const users = await queryUsers.getMany();
+
+    // Consulta para obtener el total de usuarios filtrados, excluyendo al usuario actual
+    const totalQuery = this.userReository
+      .createQueryBuilder('user')
+      .leftJoin('user.role', 'role')
+      .leftJoin('user.sucursal', 'sucursal')
+      .where('user.id != :userId', { userId: user.id }); // Excluir el usuario activo
+
+    if (sexo) {
+      totalQuery.andWhere('user.sexo = :sexo', { sexo });
+    }
+
+    if (sucursal) {
+      totalQuery.andWhere('sucursal.nombre = :sucursal', { sucursal });
+    }
+
+    if (role) {
+      totalQuery.andWhere('role.nombre = :role', { role });
+    }
+
+    if (correo) {
+      totalQuery.andWhere('user.correo = :correo', { correo });
+    }
+
+    const total = await totalQuery.getCount();
+
     if (!users || users.length === 0) {
       throw new BadRequestException('No se encontraron usuarios');
     }
-    return users;
+
+    return {
+      data: users,
+      total,
+    };
+  }
+
+  async findAllUsers() {
+    try {
+      const users = await this.userReository.find({});
+      if (!users || users.length === 0)
+        throw new NotFoundException('No se encontraron usuarios');
+      return users;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAllUsersActive(user: User) {
+    try {
+      const usuariosActivos = await this.userReository.find({
+        where: { isActive: 1, autorizado: 1 },
+      });
+
+      if (!usuariosActivos || usuariosActivos.length === 0) {
+        throw new NotFoundException('No se encontraron usuarios disponibles');
+      }
+
+      const usuariosFiltrados = usuariosActivos.filter(
+        (usuario) => usuario.id !== user.id
+      );
+
+      if (usuariosFiltrados.length === 0) {
+        throw new NotFoundException(
+          'No se encontraron otros usuarios disponibles'
+        );
+      }
+
+      return usuariosFiltrados;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAllUsersByEventos(eventoId: string) {
+    const evento = await this.eventoRepository.findOne({
+      where: { id: eventoId },
+      relations: ['usuarioCreador', 'responsable'],
+    });
+
+    if (!evento) {
+      throw new NotFoundException(`Evento con id ${eventoId} no encontrado`);
+    }
+
+    const { usuarioCreador, responsable } = evento;
+
+    const usuarios = await this.userReository.find({
+      where: {
+        isActive: 1,
+        autorizado: 1,
+      },
+    });
+
+    const usuariosFiltrados = usuarios.filter((usuario) => {
+      const isCreador = usuarioCreador
+        ? usuario.id === usuarioCreador.id
+        : false;
+      const isResponsable = responsable ? usuario.id === responsable.id : false;
+      return !isCreador && !isResponsable;
+    });
+
+    if (usuariosFiltrados.length === 0) {
+      throw new NotFoundException('No se encontraron usuarios disponibles');
+    }
+
+    return usuariosFiltrados;
+  }
+
+  async findByEmail(sendMailDto: SendMailDto) {
+    const { correo } = sendMailDto;
+
+    if (!correo) {
+      throw new BadRequestException('No se proporcionó un correo electrónico');
+    }
+
+    const user = await this.userReository.findOne({
+      where: {
+        correo: correo,
+        isActive: 1,
+        autorizado: 1,
+      },
+      relations: ['role', 'sucursal'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        `Usuario con el correo ${correo} no encontrado o no autorizado`
+      );
+    }
+
+    return user;
+  }
+
+  async findAllByRol(paginationDto: PaginationDto) {
+    const { sexo, sucursal, role } = paginationDto;
+
+    let queryUsers = this.userReository
+      .createQueryBuilder('user')
+      .leftJoin('user.role', 'role')
+      .addSelect('role.nombre')
+      .leftJoin('user.sucursal', 'sucursal')
+      .addSelect('sucursal.nombre')
+      .where('user.autorizado = :autorizado', { autorizado: 1 })
+      .andWhere('user.isActive = :isActive', { isActive: 1 });
+
+    if (sexo) {
+      queryUsers = queryUsers.andWhere('user.sexo = :sexo', { sexo });
+    }
+
+    if (sucursal) {
+      queryUsers = queryUsers.andWhere('sucursal.nombre = :sucursal', {
+        sucursal,
+      });
+    }
+
+    if (role) {
+      queryUsers = queryUsers.andWhere('role.nombre = :role', { role });
+    }
+
+    const users = await queryUsers.getMany();
+
+    const total = await this.userReository
+      .createQueryBuilder('user')
+      .leftJoin('user.role', 'role')
+      .leftJoin('user.sucursal', 'sucursal')
+      .where('user.autorizado = :autorizado', { autorizado: 1 })
+      .andWhere('user.isActive = :isActive', { isActive: 1 })
+      .andWhere(sexo ? 'user.sexo = :sexo' : '1=1', { sexo })
+      .andWhere(sucursal ? 'sucursal.nombre = :sucursal' : '1=1', { sucursal })
+      .andWhere(role ? 'role.nombre = :role' : '1=1', { role })
+      .getCount();
+
+    if (!users || users.length === 0) {
+      throw new BadRequestException('No se encontraron usuarios');
+    }
+
+    return {
+      data: users,
+      total,
+    };
   }
 
   async findAllAutorizar(paginationDto: PaginationDto) {
-    const { limit = 5, offset = 0, sexo } = paginationDto;
+    const {
+      limit = 5,
+      offset = 0,
+      sexo,
+      departamento,
+      sucursal,
+    } = paginationDto;
 
     let queryUsers = this.userReository
       .createQueryBuilder('user')
       .where('user.autorizado = :autorizado', { autorizado: 0 })
       .leftJoin('user.role', 'role')
       .addSelect('role.nombre')
-      .leftJoin('user.sucursal', 'sucursal')
-      .addSelect('sucursal.nombre')
+      .innerJoin('user.sucursal', 'sucursal')
+      .addSelect(['sucursal.nombre'])
       .take(limit)
       .skip(offset);
 
@@ -177,13 +427,28 @@ export class AuthService {
       queryUsers = queryUsers.andWhere('user.sexo = :sexo', { sexo });
     }
 
-    const users = await queryUsers.getMany();
+    if (departamento) {
+      queryUsers = queryUsers.andWhere('role.nombre = :departamento', {
+        departamento,
+      });
+    }
+
+    if (sucursal) {
+      queryUsers = queryUsers.andWhere('sucursal.nombre = :sucursal', {
+        sucursal,
+      });
+    }
+
+    const [users, total] = await queryUsers.getManyAndCount();
 
     if (!users || users.length === 0) {
       throw new BadRequestException('No se encontraron usuarios');
     }
 
-    return users;
+    return {
+      data: users,
+      total,
+    };
   }
 
   async obtenerUserByEmail(correoDto: CorreoDto, user: User) {
@@ -201,6 +466,10 @@ export class AuthService {
       throw new NotFoundException(
         `No se encontro el usuario con el correo: ${correo}`
       );
+
+    if (obtenerUsuario.autorizado === 0 || obtenerUsuario.isActive === 0) {
+      throw new UnauthorizedException('Usuario no autorizado');
+    }
 
     return obtenerUsuario;
   }

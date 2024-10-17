@@ -1,3 +1,4 @@
+import { Actividade } from 'src/actividades/entities/actividade.entity';
 import { Evento } from 'src/evento/entities/evento.entity';
 import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
 import { Role } from 'src/roles/entities/role.entity';
@@ -53,11 +54,23 @@ export class User {
   @OneToMany(() => Evento, (evento) => evento.usuarioCreador)
   eventos: Evento[];
 
+  @ManyToMany(() => Evento, (evento) => evento.usuarios)
+  evento: Evento[];
+
   @ManyToMany(() => Proyecto, (proyecto) => proyecto.usuarios)
   proyectos: Proyecto[];
 
+  @OneToMany(() => Actividade, (actividades) => actividades.usuarioAsignado)
+  actividades: Actividade[];
+
   @OneToMany(() => Proyecto, (proyecto) => proyecto.creador)
   proyectosCreados: Proyecto[];
+
+  @OneToMany(() => Actividade, (actividad) => actividad.creador)
+  actividad: Actividade[];
+
+  @OneToMany(() => Tarea, (tarea) => tarea.usuarioAsignado)
+  tareas: Tarea[];
 
   @BeforeInsert()
   setDefaultRole() {

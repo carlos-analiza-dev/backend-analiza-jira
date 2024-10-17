@@ -14,10 +14,14 @@ export class TareasService {
     private readonly tareaRepository: Repository<Tarea>,
 
     @InjectRepository(Proyecto)
-    private readonly proyectoRepository: Repository<Proyecto>
+    private readonly proyectoRepository: Repository<Proyecto>,
+
+    @InjectRepository(User)
+    private readonly userReposiyory: Repository<User>
   ) {}
   async create(createTareaDto: CreateTareaDto, user: User) {
-    const { titulo, descripcion, estado, proyectoId } = createTareaDto;
+    const { titulo, descripcion, estado, proyectoId, usuarioAsignado } =
+      createTareaDto;
 
     const proyectoEncontrado = await this.proyectoRepository.findOne({
       where: { id: proyectoId },
@@ -26,6 +30,14 @@ export class TareasService {
     if (!proyectoEncontrado) {
       throw new NotFoundException('Proyecto no encontrado');
     }
+
+    const usuarioEncontrado = await this.userReposiyory.findOne({
+      where: { id: usuarioAsignado },
+    });
+
+    if (!usuarioEncontrado) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
     try {
       const nuevaTarea = this.tareaRepository.create({
         titulo,
@@ -33,6 +45,7 @@ export class TareasService {
         estado,
         proyecto: proyectoEncontrado,
         creador: user,
+        usuarioAsignado: usuarioEncontrado,
       });
       return this.tareaRepository.save(nuevaTarea);
     } catch (error) {
@@ -64,7 +77,6 @@ export class TareasService {
 
       return proyecto.tareas;
     } catch (error) {
-      console.log(error);
       throw new Error('Hubo un problema al obtener las tareas del proyecto');
     }
   }

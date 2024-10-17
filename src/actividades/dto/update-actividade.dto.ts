@@ -1,6 +1,6 @@
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 
-export class UpdateTareaDto {
+export class UpdateActividadeDto {
   @IsString()
   @IsOptional()
   titulo?: string;

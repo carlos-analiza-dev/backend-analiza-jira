@@ -23,7 +23,11 @@ export class CreateProyectoDto {
   @IsEnum(['En Progreso', 'Finalizado'])
   estado?: string;
 
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'El responsable del proyecto el obligatorio' })
   @IsUUID()
   responsableId: string;
+
+  @IsNotEmpty({ message: 'El departamento del proyecto el obligatorio' })
+  @IsUUID()
+  rolDirigido: string;
 }

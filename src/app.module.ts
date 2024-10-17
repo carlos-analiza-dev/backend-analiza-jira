@@ -11,6 +11,7 @@ import { ProyectosModule } from './proyectos/proyectos.module';
 import { TareasModule } from './tareas/tareas.module';
 import { MailModule } from './mail/mail.module';
 import { EventoModule } from './evento/evento.module';
+import { ActividadesModule } from './actividades/actividades.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { EventoModule } from './evento/evento.module';
     TareasModule,
     MailModule,
     EventoModule,
+    ActividadesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -31,6 +31,11 @@ export class RolesController {
     return this.rolesService.findAll(paginationDto);
   }
 
+  @Get('/departamentos')
+  findAllRoles() {
+    return this.rolesService.findAllRoles();
+  }
+
   @Get(':id')
   @Auth(ValidRoles.Administrador)
   findOne(@Param('id', ParseUUIDPipe) id: string) {

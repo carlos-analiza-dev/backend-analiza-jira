@@ -46,4 +46,16 @@ export class UpdateUserDto {
   @IsNumber()
   @IsOptional()
   isActive?: boolean;
+
+  @IsString({ message: "El campo 'departamento' debe ser de tipo string" })
+  @IsOptional()
+  roleId?: string;
+
+  @IsString({ message: "El campo 'sucursal' debe ser de tipo string" })
+  @IsOptional()
+  sucursalId?: string;
+
+  @IsString({ message: "El campo 'rol' debe ser de tipo string" })
+  @IsOptional()
+  rol?: string;
 }

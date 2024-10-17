@@ -1,16 +1,16 @@
 import { User } from 'src/auth/entities/user.entity';
-import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
+import { Evento } from 'src/evento/entities/evento.entity';
 import {
   Column,
+  CreateDateColumn,
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
-  CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
-@Entity('tareas')
-export class Tarea {
+@Entity('actividades')
+export class Actividade {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -27,17 +27,17 @@ export class Tarea {
   })
   estado: string;
 
-  @ManyToOne(() => Proyecto, (proyecto) => proyecto.tareas, { eager: true })
-  proyecto: Proyecto;
-
-  @ManyToOne(() => User, (user) => user.tareasCreadas, { eager: true })
-  creador: User;
-
   @ManyToOne(() => User, { eager: true, nullable: true })
   actualizadoPor: User;
 
-  @ManyToOne(() => User, (usuario) => usuario.tareas, { eager: true })
+  @ManyToOne(() => User, (usuario) => usuario.actividades, { eager: true })
   usuarioAsignado: User;
+
+  @ManyToOne(() => Evento, (evento) => evento.actividad)
+  evento: Evento;
+
+  @ManyToOne(() => User, (usuario) => usuario.actividad, { eager: true })
+  creador: User;
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
