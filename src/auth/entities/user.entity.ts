@@ -42,25 +42,36 @@ export class User {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   rol: UserRole;
 
-  @OneToMany(() => Tarea, (tarea) => tarea.creador)
+  @OneToMany(() => Tarea, (tarea) => tarea.creador, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   tareasCreadas: Tarea[];
 
-  @ManyToOne(() => Role, (role) => role.users, { eager: true })
-  role: Role;
+  @ManyToOne(() => Role, (role) => role.users, { nullable: true })
+  role?: Role;
 
-  @ManyToOne(() => Sucursal, (sucursal) => sucursal.users)
-  sucursal: Sucursal;
+  @ManyToOne(() => Sucursal, (sucursal) => sucursal.users, { nullable: true })
+  sucursal?: Sucursal;
 
-  @OneToMany(() => Evento, (evento) => evento.usuarioCreador)
+  @OneToMany(() => Evento, (evento) => evento.usuarioCreador, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   eventos: Evento[];
 
   @ManyToMany(() => Evento, (evento) => evento.usuarios)
   evento: Evento[];
 
-  @ManyToMany(() => Proyecto, (proyecto) => proyecto.usuarios)
+  @ManyToMany(() => Proyecto, (proyecto) => proyecto.usuarios, {
+    cascade: true,
+  })
   proyectos: Proyecto[];
 
-  @OneToMany(() => Actividade, (actividades) => actividades.usuarioAsignado)
+  @OneToMany(() => Actividade, (actividades) => actividades.usuarioAsignado, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   actividades: Actividade[];
 
   @OneToMany(() => Proyecto, (proyecto) => proyecto.creador)
@@ -69,7 +80,10 @@ export class User {
   @OneToMany(() => Actividade, (actividad) => actividad.creador)
   actividad: Actividade[];
 
-  @OneToMany(() => Tarea, (tarea) => tarea.usuarioAsignado)
+  @OneToMany(() => Tarea, (tarea) => tarea.usuarioAsignado, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   tareas: Tarea[];
 
   @BeforeInsert()

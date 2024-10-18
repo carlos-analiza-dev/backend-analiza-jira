@@ -8,6 +8,7 @@ import {
   MinLength,
   Min,
   Max,
+  IsOptional,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -64,8 +65,10 @@ export class CreateUserDto {
   direccion: string;
 
   @IsString({ message: "El campo 'rol' debe ser de tipo string" })
-  roleId: string;
+  @IsOptional()
+  roleId?: string;
 
   @IsString({ message: "El campo 'sucursal' debe ser de tipo string" })
-  sucursalId: string;
+  @IsOptional()
+  sucursalId?: string;
 }

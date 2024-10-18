@@ -53,27 +53,50 @@ export class AuthService {
         roleId,
         sucursalId,
       } = createUserDto;
+
+      // Encriptar contraseña
       const passwordHash = bcrypt.hashSync(password, 10);
-      const role = await this.rolRepository.findOne({ where: { id: roleId } });
-      if (!role) {
-        throw new Error('Role no encontrado');
+
+      // Si roleId está presente, buscar el rol
+      let role = null;
+      if (roleId) {
+        role = await this.rolRepository.findOne({ where: { id: roleId } });
+        if (!role) {
+          throw new Error('Role no encontrado');
+        }
       }
-      const sucursal = await this.sucursalRepository.findOne({
-        where: { id: sucursalId },
-      });
+
+      // Si sucursalId está presente, buscar la sucursal
+      let sucursal = null;
+      if (sucursalId) {
+        sucursal = await this.sucursalRepository.findOne({
+          where: { id: sucursalId },
+        });
+        if (!sucursal) {
+          throw new Error('Sucursal no encontrada');
+        }
+      }
+
+      // Crear el usuario
       const user = this.userReository.create({
-        nombre: nombre,
-        correo: correo,
-        dni: dni,
-        direccion: direccion,
-        edad: edad,
+        nombre,
+        correo,
+        dni,
+        direccion,
+        edad,
         password: passwordHash,
-        sexo: sexo,
+        sexo,
         role,
         sucursal,
       });
+
+      // Guardar el usuario en la base de datos
       await this.userReository.save(user);
+
+      // Eliminar la contraseña antes de devolver el usuario
       delete user.password;
+
+      // Retornar el usuario junto con el token JWT
       return { ...user, token: this.getJwtPayload({ id: user.id }) };
     } catch (error) {
       throw error;
@@ -196,10 +219,8 @@ export class AuthService {
 
     let queryUsers = this.userReository
       .createQueryBuilder('user')
-      .leftJoin('user.role', 'role')
-      .addSelect('role.nombre')
-      .leftJoin('user.sucursal', 'sucursal')
-      .addSelect('sucursal.nombre')
+      .leftJoinAndSelect('user.role', 'role') // Cambiado a leftJoinAndSelect
+      .leftJoinAndSelect('user.sucursal', 'sucursal') // Cambiado a leftJoinAndSelect
       .take(limit)
       .skip(offset)
       .where('user.id != :userId', { userId: user.id }); // Excluir el usuario activo
@@ -475,13 +496,48 @@ export class AuthService {
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
-    const user = await this.userReository.findOne({ where: { id } });
-    if (!user)
+    const user = await this.userReository.findOne({
+      where: { id },
+      relations: ['role', 'sucursal'],
+    });
+
+    if (!user) {
       throw new BadRequestException(
-        `No se encontro el usuario con el id:${id}`
+        `No se encontró el usuario con el id: ${id}`
       );
+    }
+
+    // Asignar propiedades del DTO
     Object.assign(user, updateUserDto);
 
+    // Verificar si se está actualizando el rol o la sucursal
+    if (updateUserDto.roleId) {
+      const role = await this.rolRepository.findOne({
+        where: { id: updateUserDto.rol },
+      });
+      if (role) {
+        user.role = role;
+      } else {
+        throw new BadRequestException(
+          `No se encontró el rol con el id: ${updateUserDto.roleId}`
+        );
+      }
+    }
+
+    if (updateUserDto.sucursalId) {
+      const sucursal = await this.sucursalRepository.findOne({
+        where: { id: updateUserDto.sucursalId },
+      });
+      if (sucursal) {
+        user.sucursal = sucursal;
+      } else {
+        throw new BadRequestException(
+          `No se encontró la sucursal con el id: ${updateUserDto.sucursalId}`
+        );
+      }
+    }
+
+    // Guardar el usuario actualizado
     return this.userReository.save(user);
   }
 
@@ -536,12 +592,20 @@ export class AuthService {
   }
 
   async remove(id: string) {
-    const user = await this.userReository.findOne({ where: { id } });
-    if (!user)
+    const user = await this.userReository.findOne({
+      where: { id },
+      relations: ['tareasCreadas', 'eventos', 'proyectos', 'actividades'],
+    });
+
+    if (!user) {
       throw new NotFoundException(
-        'No  se encontro el usuario que se desea eliminar'
+        'No se encontró el usuario que se desea eliminar'
       );
-    await this.userReository.delete(id);
+    }
+
+    // Aquí se eliminarán automáticamente las relaciones si están configuradas correctamente.
+    await this.userReository.remove(user);
+
     return 'Usuario Eliminado Exitosamente';
   }
 
