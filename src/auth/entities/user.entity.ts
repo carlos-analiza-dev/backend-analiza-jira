@@ -95,8 +95,11 @@ export class User {
 
   @BeforeInsert()
   checkCorreo() {
-    this.correo = this.correo.toLowerCase().trim();
+    if (this.correo) {
+      this.correo = this.correo.toLowerCase().trim();
+    }
   }
+
   @BeforeUpdate()
   checkCorreoUpdate() {
     this.checkCorreo();

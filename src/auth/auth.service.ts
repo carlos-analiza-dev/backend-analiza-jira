@@ -496,6 +496,21 @@ export class AuthService {
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
+    const {
+      correo,
+      autorizado,
+      direccion,
+      dni,
+      edad,
+      isActive,
+      nombre,
+      password,
+      rol,
+      roleId,
+      sexo,
+      sucursalId,
+    } = updateUserDto;
+    // Buscar el usuario junto con las relaciones
     const user = await this.userReository.findOne({
       where: { id },
       relations: ['role', 'sucursal'],
@@ -508,12 +523,25 @@ export class AuthService {
     }
 
     // Asignar propiedades del DTO
-    Object.assign(user, updateUserDto);
+    Object.assign(user, {
+      nombre: nombre,
+      correo: correo,
+      dni: dni,
+      direccion: direccion,
+      edad: edad,
+      autorizado: autorizado,
+      isActive: isActive,
+      password: password,
+      rol: rol,
+      roleId: roleId,
+      sexo: sexo,
+      sucursalId: sucursalId,
+    });
 
-    // Verificar si se está actualizando el rol o la sucursal
+    // Verificar si se está actualizando el rol
     if (updateUserDto.roleId) {
       const role = await this.rolRepository.findOne({
-        where: { id: updateUserDto.rol },
+        where: { id: updateUserDto.roleId }, // Usar roleId en lugar de rol
       });
       if (role) {
         user.role = role;
@@ -524,9 +552,10 @@ export class AuthService {
       }
     }
 
+    // Verificar si se está actualizando la sucursal
     if (updateUserDto.sucursalId) {
       const sucursal = await this.sucursalRepository.findOne({
-        where: { id: updateUserDto.sucursalId },
+        where: { id: updateUserDto.sucursalId }, // Usar sucursalId
       });
       if (sucursal) {
         user.sucursal = sucursal;
