@@ -39,11 +39,6 @@ export class ActividadesController {
     return this.actividadesService.findAllByEventoId(id);
   }
 
-  /*  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.actividadesService.findOne(id);
-  } */
-
   @Patch(':id')
   @Auth()
   update(

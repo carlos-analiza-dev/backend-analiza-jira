@@ -49,7 +49,7 @@ export class TareasService {
       });
       return this.tareaRepository.save(nuevaTarea);
     } catch (error) {
-      console.log(error);
+      throw error;
     }
   }
 
@@ -60,7 +60,7 @@ export class TareasService {
         throw new NotFoundException('No se encontraron tareas');
       return tareasProyectId;
     } catch (error) {
-      console.log(error);
+      throw error;
     }
   }
 
@@ -106,7 +106,7 @@ export class TareasService {
       await this.tareaRepository.remove(deleteTask);
       return 'Tarea eliminada exitosamente';
     } catch (error) {
-      console.log(error);
+      throw error;
     }
   }
 }

@@ -23,6 +23,7 @@ import { CorreoDto } from './dto/correo-user.dto';
 import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
 import { SendMailDto } from './dto/reset-password.dto';
 import { Evento } from 'src/evento/entities/evento.entity';
+import { error } from 'console';
 
 @Injectable()
 export class AuthService {
@@ -76,6 +77,20 @@ export class AuthService {
           throw new Error('Sucursal no encontrada');
         }
       }
+
+      const dniDuplicate = await this.userReository.findOne({ where: { dni } });
+      if (dniDuplicate)
+        throw new BadRequestException(
+          'El dni que ingresaste ya existe en la base de datos'
+        );
+
+      const correoDuplicate = await this.userReository.findOne({
+        where: { correo },
+      });
+      if (correoDuplicate)
+        throw new BadRequestException(
+          'El correo que ingresaste ya existe en la base de datos'
+        );
 
       // Crear el usuario
       const user = this.userReository.create({
@@ -640,8 +655,6 @@ export class AuthService {
 
   private handleError(error: any): never {
     if (error.code === '23505') throw new BadRequestException(error.detail);
-
-    console.log(error);
 
     throw new InternalServerErrorException(
       'Hubo un error interno en el servidor, por favor revisalo'

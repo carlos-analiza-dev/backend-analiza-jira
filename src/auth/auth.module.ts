@@ -37,17 +37,11 @@ import { Evento } from 'src/evento/entities/evento.entity';
         return {
           secret: configService.get('JWT_SECRET'),
           signOptions: {
-            expiresIn: '2h',
+            expiresIn: '12h',
           },
         };
       },
     }),
-    /*  JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: {
-        expiresIn: '2h',
-      },
-    }), */
   ],
   exports: [TypeOrmModule, JwtStrategy, PassportModule, JwtModule],
 })

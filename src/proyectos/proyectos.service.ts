@@ -213,7 +213,6 @@ export class ProyectosService {
         throw new NotFoundException(
           `No se encontraron proyectos con el id: ${id}`
         );
-      console.log(proyecto);
 
       return proyecto;
     } catch (error) {
@@ -266,8 +265,6 @@ export class ProyectosService {
   }
 
   async deleteColaborador(proyectoId: string, userId: string, user: User) {
-    console.log(proyectoId);
-
     const proyecto = await this.pryectoRespository.findOne({
       where: { id: proyectoId },
       relations: ['usuarios'],
@@ -299,15 +296,12 @@ export class ProyectosService {
       await this.pryectoRespository.remove(proyectoDelete);
       return 'Proyecto eliminado exitosamente';
     } catch (error) {
-      console.log(error);
       this.handleError(error);
     }
   }
 
   private handleError(error: any): never {
     if (error.code === '23505') throw new BadRequestException(error.detail);
-
-    console.log(error);
 
     throw new InternalServerErrorException(
       'Hubo un error interno en el servidor, por favor revisalo'

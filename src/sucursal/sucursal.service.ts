@@ -23,7 +23,6 @@ export class SucursalService {
       await this.sucursalRepository.save(sucursal);
       return sucursal;
     } catch (error) {
-      console.log(error);
       this.handleError(error);
     }
   }

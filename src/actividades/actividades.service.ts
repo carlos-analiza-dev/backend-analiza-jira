@@ -78,8 +78,6 @@ export class ActividadesService {
       }
       return actividadesByEvento;
     } catch (error) {
-      console.log(error);
-
       throw error;
     }
   }

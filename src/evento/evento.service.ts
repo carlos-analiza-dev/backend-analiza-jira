@@ -130,7 +130,6 @@ export class EventoService {
   async actualizarEstadoEventos() {
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
-    console.log('Fecha actual (normalizada):', currentDate);
 
     try {
       const result = await this.eventoRepository
@@ -160,53 +159,25 @@ export class EventoService {
         .leftJoinAndSelect('evento.usuarioCreador', 'usuarioCreador')
         .leftJoinAndSelect('evento.usuarios', 'usuarios')
         .leftJoinAndSelect('evento.responsable', 'responsable')
-        .where('usuarioCreador.id = :userId', { userId: user.id })
-        .orWhere('usuarios.id = :userId', { userId: user.id })
-        .orWhere('responsable.id = :userId', { userId: user.id })
+        .where(
+          '(usuarioCreador.id = :userId OR usuarios.id = :userId OR responsable.id = :userId)',
+          { userId: user.id }
+        )
+        .andWhere('evento.estado IN (:...estados)', {
+          estados: ['Activo', 'Pospuesto'],
+        })
         .getMany();
 
       if (!eventos.length) {
-        throw new NotFoundException('No estás en ningún evento');
+        throw new NotFoundException(
+          'No estás en ningún evento con estado Activo o Pospuesto'
+        );
       }
 
       return eventos;
     } catch (error) {
       throw error;
     }
-    /* const { limit = 5, offset = 0, tipoEvento, estado } = paginationDto;
-
-    try {
-      const query = this.eventoRepository
-        .createQueryBuilder('evento')
-        .where('evento.usuarioCreador = :userId', { userId: user.id });
-
-      if (estado) {
-        query.andWhere('evento.estado = :estado', { estado });
-      }
-
-      if (tipoEvento) {
-        query.andWhere('evento.tipoEvento = :tipoEvento', { tipoEvento });
-      }
-
-      const [eventosByUser, total] = await query
-        .andWhere('evento.estado IN (:...estados)', {
-          estados: ['Activo', 'Pospuesto'],
-        })
-        .take(limit)
-        .skip(offset)
-        .getManyAndCount();
-
-      if (!eventosByUser || eventosByUser.length === 0) {
-        throw new NotFoundException('No se encontraron eventos.');
-      }
-
-      return {
-        data: eventosByUser,
-        total,
-      };
-    } catch (error) {
-      throw error;
-    } */
   }
 
   async getColaboradoresByEventoId(eventoId: string, user: User) {
