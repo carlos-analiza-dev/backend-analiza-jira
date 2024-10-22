@@ -50,9 +50,25 @@ export class CreateUserDto {
   @Max(120, { message: 'El campo edad no puede ser mayor a 120' })
   edad: number;
 
+  @IsString({ message: "El Campo 'pais' solo debe contener letras" })
+  @MinLength(3, { message: "El campo 'pais' debe contener 3 o más letras" })
+  @Matches(/^[a-zA-Z\s]+$/, {
+    message: 'El campo nombre solo acepta letras y espacios en blanco',
+  })
+  pais: string;
+
+  @IsString({ message: "El Campo 'empresa' solo debe contener letras" })
+  @MinLength(3, { message: "El campo 'empresa' debe contener 3 o más letras" })
+  @Matches(/^[a-zA-Z\s]+$/, {
+    message: 'El campo nombre solo acepta letras y espacios en blanco',
+  })
+  empresa: string;
+
   @IsString({ message: "El campo 'DNI' debe ser una cadena de texto" })
-  @MinLength(13, { message: "El campo 'DNI' debe tener 13 caracteres" })
-  @MaxLength(13, { message: 'El campo DNI no puede exceder 13 caracteres' })
+  @Matches(/^(\d{8}-\d|\d{4}-\d{4}-\d{5})$/, {
+    message:
+      'El número de identificación debe tener el formato xxxxxxxx-x o xxxx-xxxx-xxxxx',
+  })
   dni: string;
 
   @IsString({ message: "El campo 'direccion' solo acepta letras" })

@@ -53,6 +53,8 @@ export class AuthService {
         sexo,
         roleId,
         sucursalId,
+        pais,
+        empresa,
       } = createUserDto;
 
       // Encriptar contraseña
@@ -103,6 +105,8 @@ export class AuthService {
         sexo,
         role,
         sucursal,
+        pais,
+        empresa,
       });
 
       // Guardar el usuario en la base de datos
@@ -132,6 +136,8 @@ export class AuthService {
           rol: true,
           dni: true,
           id: true,
+          pais: true,
+          empresa: true,
         },
       });
 
@@ -511,6 +517,8 @@ export class AuthService {
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
+    console.log(updateUserDto);
+
     const {
       correo,
       autorizado,
@@ -520,69 +528,70 @@ export class AuthService {
       isActive,
       nombre,
       password,
-      rol,
-      roleId,
       sexo,
-      sucursalId,
+      roleId, // Cambiado de 'role' a 'roleId'
+      sucursalId, // Cambiado de 'sucursal' a 'sucursalId'
     } = updateUserDto;
-    // Buscar el usuario junto con las relaciones
-    const user = await this.userReository.findOne({
-      where: { id },
-      relations: ['role', 'sucursal'],
-    });
 
-    if (!user) {
-      throw new BadRequestException(
-        `No se encontró el usuario con el id: ${id}`
-      );
-    }
-
-    // Asignar propiedades del DTO
-    Object.assign(user, {
-      nombre: nombre,
-      correo: correo,
-      dni: dni,
-      direccion: direccion,
-      edad: edad,
-      autorizado: autorizado,
-      isActive: isActive,
-      password: password,
-      rol: rol,
-      roleId: roleId,
-      sexo: sexo,
-      sucursalId: sucursalId,
-    });
-
-    // Verificar si se está actualizando el rol
-    if (updateUserDto.roleId) {
-      const role = await this.rolRepository.findOne({
-        where: { id: updateUserDto.roleId }, // Usar roleId en lugar de rol
+    try {
+      // Buscar el usuario junto con las relaciones
+      const user = await this.userReository.findOne({
+        where: { id },
+        relations: ['role', 'sucursal'],
       });
-      if (role) {
-        user.role = role;
-      } else {
+
+      if (!user) {
         throw new BadRequestException(
-          `No se encontró el rol con el id: ${updateUserDto.roleId}`
+          `No se encontró el usuario con el id: ${id}`
         );
       }
-    }
 
-    // Verificar si se está actualizando la sucursal
-    if (updateUserDto.sucursalId) {
-      const sucursal = await this.sucursalRepository.findOne({
-        where: { id: updateUserDto.sucursalId }, // Usar sucursalId
+      // Asignar propiedades del DTO solo si están presentes
+      Object.assign(user, {
+        ...(nombre && { nombre }),
+        ...(correo && { correo }),
+        ...(dni && { dni }),
+        ...(direccion && { direccion }),
+        ...(edad && { edad }),
+        ...(autorizado !== undefined && { autorizado }),
+        ...(isActive !== undefined && { isActive }),
+        ...(password && { password }),
+        ...(sexo && { sexo }),
       });
-      if (sucursal) {
-        user.sucursal = sucursal;
-      } else {
-        throw new BadRequestException(
-          `No se encontró la sucursal con el id: ${updateUserDto.sucursalId}`
-        );
-      }
-    }
 
-    // Guardar el usuario actualizado
-    return this.userReository.save(user);
+      // Verificar si se está actualizando el rol
+      if (roleId) {
+        const role = await this.rolRepository.findOne({
+          where: { id: roleId },
+        });
+        if (role) {
+          user.role = role;
+        } else {
+          throw new BadRequestException(
+            `No se encontró el rol con el id: ${roleId}`
+          );
+        }
+      }
+
+      // Verificar si se está actualizando la sucursal
+      if (sucursalId) {
+        const sucursal = await this.sucursalRepository.findOne({
+          where: { id: sucursalId },
+        });
+        if (sucursal) {
+          user.sucursal = sucursal;
+        } else {
+          throw new BadRequestException(
+            `No se encontró la sucursal con el id: ${sucursalId}`
+          );
+        }
+      }
+
+      // Guardar el usuario actualizado
+      return await this.userReository.save(user);
+    } catch (error) {
+      throw error;
+    }
   }
 
   async findAllActiveUsers() {

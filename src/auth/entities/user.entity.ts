@@ -30,6 +30,20 @@ export class User {
   sexo: string;
   @Column({ type: 'integer' })
   edad: number;
+  @Column({
+    type: 'varchar',
+    length: 255,
+    default: 'Desconocido',
+    nullable: true,
+  })
+  pais: string;
+  @Column({
+    type: 'varchar',
+    length: 255,
+    default: 'Desconocido',
+    nullable: true,
+  })
+  empresa: string;
   @Column({ type: 'varchar', unique: true })
   dni: string;
   @Column({ type: 'varchar', length: 255 })
