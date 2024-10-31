@@ -27,13 +27,14 @@ export class RolesController {
   }
 
   @Get()
+  @Auth(ValidRoles.Administrador)
   findAll(@Query() paginationDto: PaginationDto) {
     return this.rolesService.findAll(paginationDto);
   }
 
   @Get('/departamentos')
-  findAllRoles() {
-    return this.rolesService.findAllRoles();
+  findAllRoles(@Query() paginationDto: PaginationDto) {
+    return this.rolesService.findAllRoles(paginationDto);
   }
 
   @Get(':id')

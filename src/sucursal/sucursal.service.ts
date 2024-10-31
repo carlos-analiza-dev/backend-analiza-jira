@@ -28,7 +28,7 @@ export class SucursalService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { limit = 5, offset = 0, departamento } = paginationDto;
+    const { limit = 5, offset = 0, departamento, pais } = paginationDto;
 
     let querySucursal = this.sucursalRepository
       .createQueryBuilder('sucursal')
@@ -40,6 +40,10 @@ export class SucursalService {
         'sucursal.departamento = :departamento',
         { departamento }
       );
+    }
+
+    if (pais) {
+      querySucursal = querySucursal.andWhere('sucursal.pais = :pais', { pais });
     }
 
     const [sucursales, total] = await querySucursal.getManyAndCount();
@@ -54,12 +58,18 @@ export class SucursalService {
     };
   }
 
-  async findAllSucursales() {
+  async findAllSucursales(paginationDto: PaginationDto) {
+    const { pais } = paginationDto;
+
     try {
-      const sucursales = await this.sucursalRepository.find({});
+      const sucursales = await this.sucursalRepository.find({
+        where: pais ? { pais } : {},
+      });
+
       if (!sucursales || sucursales.length === 0) {
         throw new NotFoundException('No se encontraron sucursales disponibles');
       }
+
       return sucursales;
     } catch (error) {
       throw error;

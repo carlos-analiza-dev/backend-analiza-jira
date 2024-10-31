@@ -28,19 +28,33 @@ export class RolesService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { limit = 5, offset = 0 } = paginationDto;
+    const { limit = 5, offset = 0, pais } = paginationDto;
 
     try {
-      const [roles, total] = await this.rolRepository
+      // Crear la consulta base
+      let query = this.rolRepository
         .createQueryBuilder('role')
         .take(limit)
-        .skip(offset)
-        .getManyAndCount();
+        .skip(offset);
+
+      // Aplicar filtro por país o incluir los roles genéricos
+      if (pais) {
+        query = query.andWhere('(role.pais = :pais OR role.pais = :generico)', {
+          pais,
+          generico: 'Generico',
+        });
+      } else {
+        // Si no hay filtro de país, solo mostrar los roles "Genéricos"
+        query = query.andWhere('role.pais = :generico', {
+          generico: 'Generico',
+        });
+      }
+
+      // Ejecutar la consulta para obtener los roles filtrados y el total
+      const [roles, total] = await query.getManyAndCount();
 
       if (!roles || roles.length === 0) {
-        throw new NotFoundException(
-          'No se encontraron departamentos disponibles'
-        );
+        throw new NotFoundException('No se encontraron roles disponibles');
       }
 
       return {
@@ -48,18 +62,27 @@ export class RolesService {
         total,
       };
     } catch (error) {
-      this.handleError(error);
+      this.handleError(error); // Método para manejar errores (si tienes uno implementado)
     }
   }
 
-  async findAllRoles() {
+  async findAllRoles(paginationDto: PaginationDto) {
+    const { pais } = paginationDto;
+
     try {
-      const departamentos = await this.rolRepository.find({});
+      // Opciones de consulta con filtro por país o por "Genérico"
+      const queryOptions = pais
+        ? { where: [{ pais }, { pais: 'Generico' }] }
+        : { where: { pais: 'Generico' } };
+
+      const departamentos = await this.rolRepository.find(queryOptions);
+
       if (!departamentos || departamentos.length === 0) {
         throw new BadRequestException(
           'No se encontraron departamentos disponibles'
         );
       }
+
       return departamentos;
     } catch (error) {
       throw error;

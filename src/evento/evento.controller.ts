@@ -16,7 +16,6 @@ import { Auth } from 'src/auth/decorators/auth.decorator';
 import { ValidRoles } from 'src/interfaces/valid-roles';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/user.entity';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Controller('evento')
 export class EventoController {

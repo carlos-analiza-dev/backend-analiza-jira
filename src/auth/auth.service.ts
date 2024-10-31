@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { LoginUserDto } from './dto/login-user.dto';
@@ -23,7 +23,7 @@ import { CorreoDto } from './dto/correo-user.dto';
 import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
 import { SendMailDto } from './dto/reset-password.dto';
 import { Evento } from 'src/evento/entities/evento.entity';
-import { error } from 'console';
+import { UserRole } from 'src/types/user.role.type';
 
 @Injectable()
 export class AuthService {
@@ -53,14 +53,23 @@ export class AuthService {
         sexo,
         roleId,
         sucursalId,
+        rol,
         pais,
         empresa,
       } = createUserDto;
 
-      // Encriptar contraseña
+      let userRole: UserRole;
+
+      if (rol === 'Administrador') {
+        userRole = UserRole.ADMIN;
+      } else if (rol === 'Gerente') {
+        userRole = UserRole.GERENTE;
+      } else {
+        userRole = UserRole.USER;
+      }
+
       const passwordHash = bcrypt.hashSync(password, 10);
 
-      // Si roleId está presente, buscar el rol
       let role = null;
       if (roleId) {
         role = await this.rolRepository.findOne({ where: { id: roleId } });
@@ -69,7 +78,6 @@ export class AuthService {
         }
       }
 
-      // Si sucursalId está presente, buscar la sucursal
       let sucursal = null;
       if (sucursalId) {
         sucursal = await this.sucursalRepository.findOne({
@@ -94,7 +102,6 @@ export class AuthService {
           'El correo que ingresaste ya existe en la base de datos'
         );
 
-      // Crear el usuario
       const user = this.userReository.create({
         nombre,
         correo,
@@ -103,19 +110,17 @@ export class AuthService {
         edad,
         password: passwordHash,
         sexo,
+        rol: userRole,
         role,
         sucursal,
         pais,
         empresa,
       });
 
-      // Guardar el usuario en la base de datos
       await this.userReository.save(user);
 
-      // Eliminar la contraseña antes de devolver el usuario
       delete user.password;
 
-      // Retornar el usuario junto con el token JWT
       return { ...user, token: this.getJwtPayload({ id: user.id }) };
     } catch (error) {
       throw error;
@@ -167,14 +172,14 @@ export class AuthService {
   async findUsersByProjectRole(projectId: string) {
     const proyecto = await this.proyectoRepository.findOne({
       where: { id: projectId },
-      relations: ['rolDirigido', 'responsable'],
+      relations: ['rolDirigido', 'responsable', 'usuarios'],
     });
 
     if (!proyecto) {
       throw new NotFoundException(`Proyecto con id ${projectId} no encontrado`);
     }
 
-    const { rolDirigido, responsable } = proyecto;
+    const { rolDirigido, responsable, usuarios } = proyecto;
 
     const users = await this.userReository.find({
       where: {
@@ -191,7 +196,11 @@ export class AuthService {
       );
     }
 
-    const filteredUsers = users.filter((user) => user.id !== responsable.id);
+    const filteredUsers = users.filter(
+      (user) =>
+        user.id !== responsable.id &&
+        !usuarios.some((colaborador) => colaborador.id === user.id)
+    );
 
     return filteredUsers;
   }
@@ -236,32 +245,42 @@ export class AuthService {
       sucursal,
       role,
       correo,
+      pais, // Añadido el campo pais
     } = paginationDto;
 
     let queryUsers = this.userReository
       .createQueryBuilder('user')
-      .leftJoinAndSelect('user.role', 'role') // Cambiado a leftJoinAndSelect
-      .leftJoinAndSelect('user.sucursal', 'sucursal') // Cambiado a leftJoinAndSelect
+      .leftJoinAndSelect('user.role', 'role')
+      .leftJoinAndSelect('user.sucursal', 'sucursal')
       .take(limit)
       .skip(offset)
       .where('user.id != :userId', { userId: user.id }); // Excluir el usuario activo
 
+    // Filtrar por sexo
     if (sexo) {
       queryUsers = queryUsers.andWhere('user.sexo = :sexo', { sexo });
     }
 
+    // Filtrar por sucursal
     if (sucursal) {
       queryUsers = queryUsers.andWhere('sucursal.nombre = :sucursal', {
         sucursal,
       });
     }
 
+    // Filtrar por rol
     if (role) {
       queryUsers = queryUsers.andWhere('role.nombre = :role', { role });
     }
 
+    // Filtrar por correo
     if (correo) {
       queryUsers = queryUsers.andWhere('user.correo = :correo', { correo });
+    }
+
+    // Filtrar por país
+    if (pais) {
+      queryUsers = queryUsers.andWhere('user.pais = :pais', { pais });
     }
 
     const users = await queryUsers.getMany();
@@ -271,8 +290,9 @@ export class AuthService {
       .createQueryBuilder('user')
       .leftJoin('user.role', 'role')
       .leftJoin('user.sucursal', 'sucursal')
-      .where('user.id != :userId', { userId: user.id }); // Excluir el usuario activo
+      .where('user.id != :userId', { userId: user.id });
 
+    // Filtros adicionales en la consulta del total
     if (sexo) {
       totalQuery.andWhere('user.sexo = :sexo', { sexo });
     }
@@ -289,6 +309,10 @@ export class AuthService {
       totalQuery.andWhere('user.correo = :correo', { correo });
     }
 
+    if (pais) {
+      totalQuery.andWhere('user.pais = :pais', { pais });
+    }
+
     const total = await totalQuery.getCount();
 
     if (!users || users.length === 0) {
@@ -301,12 +325,23 @@ export class AuthService {
     };
   }
 
-  async findAllUsers() {
+  async findAllUsers(paginationDto: PaginationDto) {
+    const { pais } = paginationDto; // Extraemos solo el país del DTO
+
     try {
-      const users = await this.userReository.find({});
-      if (!users || users.length === 0)
+      // Creamos la condición de filtro por país si está presente
+      const whereCondition = pais ? { pais } : {};
+
+      // Buscar usuarios con el filtro por país
+      const users = await this.userReository.find({
+        where: whereCondition,
+      });
+
+      if (!users || users.length === 0) {
         throw new NotFoundException('No se encontraron usuarios');
-      return users;
+      }
+
+      return users; // Retornamos los usuarios filtrados
     } catch (error) {
       throw error;
     }
@@ -341,35 +376,32 @@ export class AuthService {
   async findAllUsersByEventos(eventoId: string) {
     const evento = await this.eventoRepository.findOne({
       where: { id: eventoId },
-      relations: ['usuarioCreador', 'responsable'],
+      relations: ['usuarioCreador', 'responsable', 'usuarios'],
     });
 
     if (!evento) {
       throw new NotFoundException(`Evento con id ${eventoId} no encontrado`);
     }
 
-    const { usuarioCreador, responsable } = evento;
+    const colaboradoresIds = [
+      evento.usuarioCreador?.id,
+      evento.responsable?.id,
+      ...evento.usuarios.map((colaborador) => colaborador.id),
+    ].filter(Boolean);
 
     const usuarios = await this.userReository.find({
       where: {
         isActive: 1,
         autorizado: 1,
+        id: Not(In(colaboradoresIds)),
       },
     });
 
-    const usuariosFiltrados = usuarios.filter((usuario) => {
-      const isCreador = usuarioCreador
-        ? usuario.id === usuarioCreador.id
-        : false;
-      const isResponsable = responsable ? usuario.id === responsable.id : false;
-      return !isCreador && !isResponsable;
-    });
-
-    if (usuariosFiltrados.length === 0) {
+    if (usuarios.length === 0) {
       throw new NotFoundException('No se encontraron usuarios disponibles');
     }
 
-    return usuariosFiltrados;
+    return usuarios;
   }
 
   async findByEmail(sendMailDto: SendMailDto) {
@@ -453,6 +485,7 @@ export class AuthService {
       sexo,
       departamento,
       sucursal,
+      pais,
     } = paginationDto;
 
     let queryUsers = this.userReository
@@ -460,30 +493,38 @@ export class AuthService {
       .where('user.autorizado = :autorizado', { autorizado: 0 })
       .leftJoin('user.role', 'role')
       .addSelect('role.nombre')
-      .innerJoin('user.sucursal', 'sucursal')
-      .addSelect(['sucursal.nombre'])
+      .leftJoin('user.sucursal', 'sucursal') // Cambiado a leftJoin
+      .addSelect('sucursal.nombre')
       .take(limit)
       .skip(offset);
 
+    // Filtro por sexo
     if (sexo) {
       queryUsers = queryUsers.andWhere('user.sexo = :sexo', { sexo });
     }
 
+    // Filtro por departamento (rol)
     if (departamento) {
       queryUsers = queryUsers.andWhere('role.nombre = :departamento', {
         departamento,
       });
     }
 
+    // Filtro por sucursal
     if (sucursal) {
       queryUsers = queryUsers.andWhere('sucursal.nombre = :sucursal', {
         sucursal,
       });
     }
 
+    // Filtro por país
+    if (pais) {
+      queryUsers = queryUsers.andWhere('user.pais = :pais', { pais });
+    }
+
     const [users, total] = await queryUsers.getManyAndCount();
 
-    if (!users || users.length === 0) {
+    if (users.length === 0) {
       throw new BadRequestException('No se encontraron usuarios');
     }
 
@@ -517,8 +558,6 @@ export class AuthService {
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
-    console.log(updateUserDto);
-
     const {
       correo,
       autorizado,
@@ -594,27 +633,46 @@ export class AuthService {
     }
   }
 
-  async findAllActiveUsers() {
+  async findAllActiveUsers(paginationDto: PaginationDto) {
+    const { pais } = paginationDto;
+
+    // Filtrar usuarios activos por país
     const usuariosActivos = await this.userReository.find({
-      where: { isActive: 1 },
+      where: {
+        isActive: 1,
+        pais: pais, // Filtrar por país
+      },
     });
+
+    // Filtrar usuarios inactivos por país
     const usuariosInactivos = await this.userReository.find({
-      where: { isActive: 0 },
+      where: {
+        isActive: 0,
+        pais: pais, // Filtrar por país
+      },
     });
+
+    // Retornar el conteo de usuarios activos e inactivos
     return {
       activos: usuariosActivos.length,
       inactivos: usuariosInactivos.length,
     };
   }
 
-  async findAllUsersBySucursal() {
+  async findAllUsersBySucursal(paginationDto: PaginationDto) {
+    const { pais } = paginationDto;
+
     try {
       const usersBySucursal = await this.userReository
         .createQueryBuilder('user')
         .where('user.isActive = :isActive', { isActive: 1 })
         .leftJoinAndSelect('user.sucursal', 'sucursal')
+
+        .andWhere(pais ? 'sucursal.pais = :pais' : '1=1', { pais })
+
         .select('sucursal.nombre', 'sucursal')
         .addSelect('COUNT(user.id)', 'cantidadUsuarios')
+
         .groupBy('sucursal.nombre')
         .getRawMany();
 
@@ -624,14 +682,26 @@ export class AuthService {
     }
   }
 
-  async findAllUserAutorizados() {
+  async findAllUserAutorizados(paginationDto: PaginationDto) {
+    const { pais } = paginationDto;
+
+    // Filtrar usuarios autorizados por país
     const usersAutorizados = await this.userReository.find({
-      where: { autorizado: 1 },
-    });
-    const usersNoAutorizados = await this.userReository.find({
-      where: { autorizado: 0 },
+      where: {
+        autorizado: 1,
+        pais: pais, // Filtra por país
+      },
     });
 
+    // Filtrar usuarios no autorizados por país
+    const usersNoAutorizados = await this.userReository.find({
+      where: {
+        autorizado: 0,
+        pais: pais, // Filtra por país
+      },
+    });
+
+    // Retornar el conteo de autorizados y no autorizados
     return {
       autorizado: usersAutorizados.length,
       no_autorizado: usersNoAutorizados.length,

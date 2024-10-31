@@ -5,12 +5,11 @@ import {
 } from '@nestjs/common';
 import { CreateEventoDto } from './dto/create-evento.dto';
 import { UpdateEventoDto } from './dto/update-evento.dto';
-import { In, LessThan, Not, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Evento } from './entities/evento.entity';
 import { User } from 'src/auth/entities/user.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { Actividade } from 'src/actividades/entities/actividade.entity';
 
 @Injectable()
@@ -19,9 +18,7 @@ export class EventoService {
     @InjectRepository(Evento)
     private readonly eventoRepository: Repository<Evento>,
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(Actividade)
-    private readonly actuvidadeRepository: Repository<Actividade>
+    private readonly userRepository: Repository<User>
   ) {}
   async create(createEventoDto: CreateEventoDto, user: User) {
     const {
@@ -41,9 +38,9 @@ export class EventoService {
     endDate.setHours(0, 0, 0, 0);
     currentDate.setHours(0, 0, 0, 0);
 
-    if (startDate >= endDate) {
+    if (startDate > endDate) {
       throw new BadRequestException(
-        'La fecha de inicio no puede ser posterior o igual a la fecha de fin.'
+        'La fecha de inicio no puede ser posterior a la fecha de fin.'
       );
     }
 
@@ -280,9 +277,9 @@ export class EventoService {
     endDate.setHours(0, 0, 0, 0);
     currentDate.setHours(0, 0, 0, 0);
 
-    if (startDate >= endDate) {
+    if (startDate > endDate) {
       throw new BadRequestException(
-        'La fecha de inicio no puede ser posterior o igual a la fecha de fin.'
+        'La fecha de inicio no puede ser posterior a la fecha de fin.'
       );
     }
 

@@ -39,4 +39,8 @@ export class PaginationDto {
   @IsOptional()
   @IsString()
   correo?: string;
+
+  @IsOptional()
+  @IsString()
+  pais?: string;
 }

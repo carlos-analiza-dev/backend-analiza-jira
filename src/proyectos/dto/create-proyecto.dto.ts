@@ -30,4 +30,7 @@ export class CreateProyectoDto {
   @IsNotEmpty({ message: 'El departamento del proyecto el obligatorio' })
   @IsUUID()
   rolDirigido: string;
+  @IsNotEmpty({ message: 'La empresa del proyecto el obligatorio' })
+  @IsUUID()
+  empresaId: string;
 }

@@ -33,8 +33,8 @@ export class SucursalController {
   }
 
   @Get('sucursales')
-  findAllSucursales() {
-    return this.sucursalService.findAllSucursales();
+  findAllSucursales(@Query() paginationDto: PaginationDto) {
+    return this.sucursalService.findAllSucursales(paginationDto);
   }
 
   @Get(':id')

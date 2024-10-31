@@ -12,6 +12,9 @@ export class Sucursal {
   @Column({ type: 'varchar' })
   departamento: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  pais: string;
+
   @Column({ type: 'varchar' })
   direccion: string;
 

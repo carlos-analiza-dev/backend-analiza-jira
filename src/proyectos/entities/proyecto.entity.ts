@@ -1,4 +1,5 @@
 import { User } from 'src/auth/entities/user.entity';
+import { Empresa } from 'src/empresa/entities/empresa.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { Tarea } from 'src/tareas/entities/tarea.entity';
 
@@ -52,4 +53,7 @@ export class Proyecto {
 
   @ManyToOne(() => Role, (role) => role.proyectos, { eager: true })
   rolDirigido: Role;
+
+  @ManyToOne(() => Empresa, (empresa) => empresa.proyectos, { eager: true })
+  empresa: Empresa;
 }

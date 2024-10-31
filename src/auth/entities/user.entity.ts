@@ -101,13 +101,6 @@ export class User {
   tareas: Tarea[];
 
   @BeforeInsert()
-  setDefaultRole() {
-    if (!this.role) {
-      this.rol = UserRole.USER;
-    }
-  }
-
-  @BeforeInsert()
   checkCorreo() {
     if (this.correo) {
       this.correo = this.correo.toLowerCase().trim();

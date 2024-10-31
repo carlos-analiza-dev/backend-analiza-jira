@@ -11,6 +11,7 @@ import { Proyecto } from './entities/proyecto.entity';
 import { Brackets, Repository } from 'typeorm';
 import { User } from 'src/auth/entities/user.entity';
 import { Role } from 'src/roles/entities/role.entity';
+import { Empresa } from 'src/empresa/entities/empresa.entity';
 
 @Injectable()
 export class ProyectosService {
@@ -20,11 +21,20 @@ export class ProyectosService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(Role)
-    private readonly rolRepository: Repository<Role>
+    private readonly rolRepository: Repository<Role>,
+    @InjectRepository(Empresa)
+    private readonly empresaRepository: Repository<Empresa>
   ) {}
   async create(createProyectoDto: CreateProyectoDto, user: User) {
-    const { nombre, cliente, descripcion, estado, responsableId, rolDirigido } =
-      createProyectoDto;
+    const {
+      nombre,
+      cliente,
+      descripcion,
+      estado,
+      responsableId,
+      rolDirigido,
+      empresaId,
+    } = createProyectoDto;
     try {
       const responsable = await this.userRepository.findOne({
         where: { id: responsableId },
@@ -44,6 +54,15 @@ export class ProyectosService {
         );
       }
 
+      const empresa = await this.empresaRepository.findOne({
+        where: { id: empresaId },
+      });
+      if (!empresa) {
+        throw new NotFoundException(
+          `No se encontró el rol con id: ${rolDirigido}`
+        );
+      }
+
       const proyecto = this.pryectoRespository.create({
         nombre: nombre,
         cliente: cliente,
@@ -52,6 +71,7 @@ export class ProyectosService {
         creador: user,
         responsable: responsable,
         rolDirigido: rol,
+        empresa: empresa,
       });
       if (!proyecto) {
         throw new BadRequestException('Ocurrio un error al crear el proyecto');
@@ -112,7 +132,7 @@ export class ProyectosService {
   async findAll(user: User) {
     try {
       const proyectos = await this.pryectoRespository.find({
-        where: { creador: user.proyectosCreados },
+        where: { creador: user },
       });
       if (!proyectos || proyectos.length === 0)
         throw new NotFoundException('No se encontraron proyectos');
@@ -227,6 +247,7 @@ export class ProyectosService {
         .leftJoinAndSelect('proyecto.creador', 'creador')
         .leftJoinAndSelect('proyecto.usuarios', 'usuarios')
         .leftJoinAndSelect('proyecto.responsable', 'responsable')
+        .leftJoinAndSelect('proyecto.empresa', 'empresa')
 
         .where(
           new Brackets((qb) => {

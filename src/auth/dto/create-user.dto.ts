@@ -9,7 +9,9 @@ import {
   Min,
   Max,
   IsOptional,
+  IsEnum,
 } from 'class-validator';
+import { UserRole } from 'src/types/user.role.type';
 
 export class CreateUserDto {
   @IsString({ message: "El Campo 'nombre' solo debe contener letras" })
@@ -53,7 +55,7 @@ export class CreateUserDto {
   @IsString({ message: "El Campo 'pais' solo debe contener letras" })
   @MinLength(3, { message: "El campo 'pais' debe contener 3 o más letras" })
   @Matches(/^[a-zA-Z\s]+$/, {
-    message: 'El campo nombre solo acepta letras y espacios en blanco',
+    message: 'Elige un pais, es obligatorio.',
   })
   pais: string;
 
@@ -79,6 +81,10 @@ export class CreateUserDto {
     message: "El campo 'direccion' no puede tener menos de 2 caracteres",
   })
   direccion: string;
+
+  @IsEnum(UserRole, { message: 'El campo rol debe ser un valor válido' })
+  @IsOptional()
+  rol?: UserRole;
 
   @IsString({ message: "El campo 'rol' debe ser de tipo string" })
   @IsOptional()

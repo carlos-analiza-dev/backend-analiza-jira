@@ -55,8 +55,8 @@ export class AuthController {
 
   @Get('Allusers')
   @Auth(ValidRoles.Administrador)
-  findAllUsers() {
-    return this.authService.findAllUsers();
+  findAllUsers(@Query() paginationDto: PaginationDto) {
+    return this.authService.findAllUsers(paginationDto);
   }
 
   @Get('usersActives')
@@ -91,14 +91,14 @@ export class AuthController {
 
   @Get('active-users')
   @Auth(ValidRoles.Administrador)
-  findAllActiveUsers() {
-    return this.authService.findAllActiveUsers();
+  findAllActiveUsers(@Query() paginationDto: PaginationDto) {
+    return this.authService.findAllActiveUsers(paginationDto);
   }
 
   @Get('users-sucursal')
   @Auth(ValidRoles.Administrador)
-  findAllUsersBySucursal() {
-    return this.authService.findAllUsersBySucursal();
+  findAllUsersBySucursal(@Query() paginatioDto: PaginationDto) {
+    return this.authService.findAllUsersBySucursal(paginatioDto);
   }
 
   @Get('autorizar')
@@ -109,8 +109,8 @@ export class AuthController {
 
   @Get('autorizado')
   @Auth(ValidRoles.Administrador)
-  findAllAutorizar() {
-    return this.authService.findAllUserAutorizados();
+  findAllAutorizar(@Query() paginationDto: PaginationDto) {
+    return this.authService.findAllUserAutorizados(paginationDto);
   }
 
   @Post('colaborador')

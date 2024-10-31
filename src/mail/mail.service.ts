@@ -20,7 +20,6 @@ export class MailService {
 
       return { message: 'Password reset email sent' };
     } catch (error) {
-      console.error('Error sending email:', error);
       throw new Error('Failed to send email');
     }
   }
@@ -44,7 +43,6 @@ export class MailService {
 
       return { message: 'Correo de confirmación enviado' };
     } catch (error) {
-      console.error('Error sending email:', error);
       throw new Error('Failed to send email');
     }
   }
