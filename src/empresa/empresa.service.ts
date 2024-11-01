@@ -58,7 +58,9 @@ export class EmpresaService {
   }
 
   async findAllEmpresas() {
-    const empresas = await this.empresaRepository.find({});
+    const empresas = await this.empresaRepository.find({
+      where: { estado: 'Activa' },
+    });
     try {
       if (!empresas || empresas.length === 0) {
         throw new NotFoundException('No se encontraron empresas disponibles');
