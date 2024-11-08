@@ -48,13 +48,13 @@ export class AuthController {
   }
 
   @Get('users')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findAll(@Query() paginationDto: PaginationDto, @GetUser() user: User) {
     return this.authService.findAll(paginationDto, user);
   }
 
   @Get('Allusers')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findAllUsers(@Query() paginationDto: PaginationDto) {
     return this.authService.findAllUsers(paginationDto);
   }
@@ -72,13 +72,13 @@ export class AuthController {
   }
 
   @Get('usersByEmail')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findAllByEmail(@Query() sendMailDto: SendMailDto) {
     return this.authService.findByEmail(sendMailDto);
   }
 
   @Get('usersByRol')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findAllByRol(@Query() paginationDto: PaginationDto) {
     return this.authService.findAllByRol(paginationDto);
   }
@@ -90,25 +90,25 @@ export class AuthController {
   }
 
   @Get('active-users')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findAllActiveUsers(@Query() paginationDto: PaginationDto) {
     return this.authService.findAllActiveUsers(paginationDto);
   }
 
   @Get('users-sucursal')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findAllUsersBySucursal(@Query() paginatioDto: PaginationDto) {
     return this.authService.findAllUsersBySucursal(paginatioDto);
   }
 
   @Get('autorizar')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findAllUserAutorizados(@Query() paginationDto: PaginationDto) {
     return this.authService.findAllAutorizar(paginationDto);
   }
 
   @Get('autorizado')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findAllAutorizar(@Query() paginationDto: PaginationDto) {
     return this.authService.findAllUserAutorizados(paginationDto);
   }

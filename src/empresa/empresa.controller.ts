@@ -20,7 +20,7 @@ export class EmpresaController {
   constructor(private readonly empresaService: EmpresaService) {}
 
   @Post()
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   create(@Body() createEmpresaDto: CreateEmpresaDto) {
     return this.empresaService.create(createEmpresaDto);
   }
@@ -48,7 +48,7 @@ export class EmpresaController {
   }
 
   @Delete(':id')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   remove(@Param('id') id: string) {
     return this.empresaService.remove(id);
   }

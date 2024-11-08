@@ -11,6 +11,7 @@ import { Evento } from './entities/evento.entity';
 import { User } from 'src/auth/entities/user.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Actividade } from 'src/actividades/entities/actividade.entity';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class EventoService {
@@ -174,6 +175,32 @@ export class EventoService {
       return eventos;
     } catch (error) {
       throw error;
+    }
+  }
+
+  async findAllEventosManager(paginationDto: PaginationDto) {
+    const { limit, offset, tipoEvento } = paginationDto;
+
+    try {
+      const query = this.eventoRepository.createQueryBuilder('evento');
+
+      // Filtrado por tipo de evento, si se proporciona
+      if (tipoEvento) {
+        query.andWhere('evento.tipoEvento = :tipoEvento', { tipoEvento });
+      }
+
+      // Paginación
+      query.skip(offset).take(limit);
+
+      // Obtener resultados
+      const [eventos, total] = await query.getManyAndCount();
+
+      return {
+        data: eventos,
+        total,
+      };
+    } catch (error) {
+      throw new Error('Error al obtener eventos');
     }
   }
 

@@ -21,13 +21,13 @@ export class SucursalController {
   constructor(private readonly sucursalService: SucursalService) {}
 
   @Post()
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   create(@Body() createSucursalDto: CreateSucursalDto) {
     return this.sucursalService.create(createSucursalDto);
   }
 
   @Get()
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findAll(@Query() paginationDto: PaginationDto) {
     return this.sucursalService.findAll(paginationDto);
   }
@@ -38,13 +38,13 @@ export class SucursalController {
   }
 
   @Get(':id')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.sucursalService.findOne(id);
   }
 
   @Patch(':id')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateSucursalDto: UpdateSucursalDto
@@ -53,7 +53,7 @@ export class SucursalController {
   }
 
   @Delete(':id')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.sucursalService.remove(id);
   }

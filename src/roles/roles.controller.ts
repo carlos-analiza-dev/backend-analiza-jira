@@ -21,13 +21,13 @@ export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   @Post()
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   create(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.create(createRoleDto);
   }
 
   @Get()
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findAll(@Query() paginationDto: PaginationDto) {
     return this.rolesService.findAll(paginationDto);
   }
@@ -38,13 +38,13 @@ export class RolesController {
   }
 
   @Get(':id')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.rolesService.findOne(id);
   }
 
   @Patch(':id')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateRoleDto: UpdateRoleDto
@@ -53,7 +53,7 @@ export class RolesController {
   }
 
   @Delete(':id')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.rolesService.remove(id);
   }

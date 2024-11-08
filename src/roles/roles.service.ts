@@ -31,26 +31,22 @@ export class RolesService {
     const { limit = 5, offset = 0, pais } = paginationDto;
 
     try {
-      // Crear la consulta base
       let query = this.rolRepository
         .createQueryBuilder('role')
         .take(limit)
         .skip(offset);
 
-      // Aplicar filtro por país o incluir los roles genéricos
       if (pais) {
         query = query.andWhere('(role.pais = :pais OR role.pais = :generico)', {
           pais,
           generico: 'Generico',
         });
       } else {
-        // Si no hay filtro de país, solo mostrar los roles "Genéricos"
         query = query.andWhere('role.pais = :generico', {
           generico: 'Generico',
         });
       }
 
-      // Ejecutar la consulta para obtener los roles filtrados y el total
       const [roles, total] = await query.getManyAndCount();
 
       if (!roles || roles.length === 0) {
@@ -62,7 +58,7 @@ export class RolesService {
         total,
       };
     } catch (error) {
-      this.handleError(error); // Método para manejar errores (si tienes uno implementado)
+      this.handleError(error);
     }
   }
 

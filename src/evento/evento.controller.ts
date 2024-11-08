@@ -16,13 +16,14 @@ import { Auth } from 'src/auth/decorators/auth.decorator';
 import { ValidRoles } from 'src/interfaces/valid-roles';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/user.entity';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Controller('evento')
 export class EventoController {
   constructor(private readonly eventoService: EventoService) {}
 
   @Post()
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   create(@Body() createEventoDto: CreateEventoDto, @GetUser() user: User) {
     return this.eventoService.create(createEventoDto, user);
   }
@@ -41,6 +42,12 @@ export class EventoController {
   @Auth()
   findAllByAdmin(@GetUser() user: User) {
     return this.eventoService.findAllByAdmin(user);
+  }
+
+  @Get('manager')
+  @Auth(ValidRoles.Manager)
+  findAllEventosManager(@Query() paginationDto: PaginationDto) {
+    return this.eventoService.findAllEventosManager(paginationDto);
   }
 
   @Get(':id/colaborador')
@@ -82,7 +89,7 @@ export class EventoController {
   }
 
   @Delete(':id')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   remove(@Param('id') id: string) {
     return this.eventoService.remove(id);
   }

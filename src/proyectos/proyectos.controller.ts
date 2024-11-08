@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import { ProyectosService } from './proyectos.service';
 import { CreateProyectoDto } from './dto/create-proyecto.dto';
@@ -15,6 +16,7 @@ import { User } from 'src/auth/entities/user.entity';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { ValidRoles } from 'src/interfaces/valid-roles';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 @Controller('proyectos')
 export class ProyectosController {
   constructor(private readonly proyectosService: ProyectosService) {}
@@ -47,8 +49,14 @@ export class ProyectosController {
     return this.proyectosService.findAll(user);
   }
 
+  @Get('manager')
+  @Auth(ValidRoles.Manager)
+  findProyectosManager(@Query() paginationDto: PaginationDto) {
+    return this.proyectosService.findProyectosManager(paginationDto);
+  }
+
   @Get('status')
-  @Auth(ValidRoles.Administrador)
+  @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findAllStatusProyectos() {
     return this.proyectosService.findAllStatusProyectos();
   }

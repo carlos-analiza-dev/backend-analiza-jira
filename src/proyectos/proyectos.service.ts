@@ -12,6 +12,7 @@ import { Brackets, Repository } from 'typeorm';
 import { User } from 'src/auth/entities/user.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { Empresa } from 'src/empresa/entities/empresa.entity';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @Injectable()
 export class ProyectosService {
@@ -137,6 +138,45 @@ export class ProyectosService {
       if (!proyectos || proyectos.length === 0)
         throw new NotFoundException('No se encontraron proyectos');
       return proyectos;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findProyectosManager(paginationDto: PaginationDto = {}) {
+    const { estado, limit = 5, offset = 0 } = paginationDto;
+
+    try {
+      const query = this.pryectoRespository
+        .createQueryBuilder('proyecto')
+        .leftJoinAndSelect('proyecto.creador', 'creador')
+        .leftJoinAndSelect('proyecto.usuarios', 'usuarios')
+        .leftJoinAndSelect('proyecto.responsable', 'responsable')
+        .leftJoinAndSelect('proyecto.rolDirigido', 'rolDirigido')
+        .leftJoinAndSelect('proyecto.empresa', 'empresa')
+        .orderBy('proyecto.fechaCreacion', 'DESC') // Ordenar por fecha de creación en orden descendente
+        .skip(offset)
+        .take(limit);
+
+      // Aplica el filtro de estado si está definido y no es nulo
+      if (estado !== undefined && estado !== null && estado !== '') {
+        query.andWhere('proyecto.estado = :estado', { estado });
+      }
+
+      const [proyectos, total] = await query.getManyAndCount();
+
+      // Devuelve un objeto vacío si no se encontraron proyectos
+      if (!proyectos.length) {
+        return {
+          total: 0,
+          proyectos: [],
+        };
+      }
+
+      return {
+        total,
+        proyectos,
+      };
     } catch (error) {
       throw error;
     }
