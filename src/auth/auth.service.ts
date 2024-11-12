@@ -373,6 +373,56 @@ export class AuthService {
     }
   }
 
+  async findAllUsersEmpresa(): Promise<{ empresa: string; count: number }[]> {
+    // Consultar y agrupar usuarios por empresa
+    const result = await this.userReository
+      .createQueryBuilder('user')
+      .select('user.empresa', 'empresa')
+      .addSelect('COUNT(user.id)', 'count')
+      .groupBy('user.empresa')
+      .where('user.isActive = :isActive', { isActive: 1 })
+      .andWhere('user.autorizado = :autorizado', { autorizado: 1 })
+      .getRawMany();
+
+    // Formatear el resultado para que devuelva un array con objetos { empresa, count }
+    return result.map((row) => ({
+      empresa: row.empresa,
+      count: Number(row.count),
+    }));
+  }
+
+  async findAllUsersRol(
+    pais?: string
+  ): Promise<{ role: string; count: number }[]> {
+    // Iniciar la consulta de usuarios agrupados por rol
+    const query = this.userReository
+      .createQueryBuilder('user')
+      .innerJoinAndSelect('user.role', 'role') // Unir con la tabla de roles
+      .select('role.nombre', 'role') // Seleccionar el nombre del rol
+      .addSelect('COUNT(user.id)', 'count') // Contar los usuarios por rol
+      .where('user.isActive = :isActive', { isActive: 1 }) // Filtrar usuarios activos
+      .andWhere('user.autorizado = :autorizado', { autorizado: 1 }); // Filtrar usuarios autorizados
+
+    // Agregar el filtro de país si se proporciona
+    if (pais) {
+      query.andWhere('user.pais = :pais', { pais });
+    }
+
+    // Agrupar los resultados por nombre del rol
+    query.groupBy('role.nombre');
+
+    // Ejecutar la consulta
+    const result = await query.getRawMany();
+
+    // Retornar solo los roles con conteo mayor que cero
+    return result
+      .map((row) => ({
+        role: row.role,
+        count: Number(row.count),
+      }))
+      .filter((row) => row.count > 0);
+  }
+
   async findAllUsersByEventos(eventoId: string) {
     const evento = await this.eventoRepository.findOne({
       where: { id: eventoId },

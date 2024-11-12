@@ -32,7 +32,6 @@ export class EmpresaController {
   }
 
   @Get('empresas')
-  @Auth()
   findAllEmpresas() {
     return this.empresaService.findAllEmpresas();
   }

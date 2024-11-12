@@ -65,6 +65,18 @@ export class AuthController {
     return this.authService.findAllUsersActive(user);
   }
 
+  @Get('users-empresa')
+  @Auth()
+  findAllUsersEmpresa() {
+    return this.authService.findAllUsersEmpresa();
+  }
+
+  @Get('users-rol')
+  @Auth()
+  findAllUsersRol(@Query('pais') pais?: string) {
+    return this.authService.findAllUsersRol(pais);
+  }
+
   @Get('usersByEventos/:eventoId')
   @Auth()
   findAllUsersByEventos(@Param('eventoId') eventoId: string) {
