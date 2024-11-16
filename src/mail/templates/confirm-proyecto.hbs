@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asignación de Proyecto</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            color: #4CAF50;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 18px;
+            margin: 8px 0;
+        }
+        .project-name {
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .user-name {
+            font-weight: bold;
+            color: #FF5722;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>¡Asignación Exitosa!</h1>
+        <p>Hola <span class="user-name">{{nombre}}</span>,</p>
+        <p>Has sido asignado como responsable del proyecto:</p>
+        <p class="project-name">{{proyecto}}</p>
+        <p>Revisa porfavor tus proyectos.</p>
+        <p>¡Te deseamos mucho éxito en esta nueva responsabilidad!</p>
+    </div>
+</body>
+</html>

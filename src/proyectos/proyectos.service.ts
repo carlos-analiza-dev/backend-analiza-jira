@@ -13,6 +13,7 @@ import { User } from 'src/auth/entities/user.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { Empresa } from 'src/empresa/entities/empresa.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class ProyectosService {
@@ -24,7 +25,8 @@ export class ProyectosService {
     @InjectRepository(Role)
     private readonly rolRepository: Repository<Role>,
     @InjectRepository(Empresa)
-    private readonly empresaRepository: Repository<Empresa>
+    private readonly empresaRepository: Repository<Empresa>,
+    private readonly mailService: MailService
   ) {}
   async create(createProyectoDto: CreateProyectoDto, user: User) {
     const {
@@ -77,6 +79,11 @@ export class ProyectosService {
       if (!proyecto) {
         throw new BadRequestException('Ocurrio un error al crear el proyecto');
       }
+      await this.mailService.sendEmailConfirmProject(
+        responsable.correo,
+        responsable.nombre,
+        nombre
+      );
       await this.pryectoRespository.save(proyecto);
       return proyecto;
     } catch (error) {
@@ -297,6 +304,9 @@ export class ProyectosService {
           })
         )
         .andWhere('proyecto.estado != :estado', { estado: 'Finalizado' })
+        .andWhere('proyecto.statusProject = :statusProject', {
+          statusProject: 'Aceptado',
+        })
         .getMany();
 
       if (!proyectos.length) {
@@ -309,16 +319,70 @@ export class ProyectosService {
     }
   }
 
+  async findAllProyectosResponsable(user: User) {
+    try {
+      const proyectos = await this.pryectoRespository
+        .createQueryBuilder('proyecto')
+        .leftJoinAndSelect('proyecto.creador', 'creador')
+        .leftJoinAndSelect('proyecto.usuarios', 'usuarios')
+        .leftJoinAndSelect('proyecto.responsable', 'responsable')
+        .leftJoinAndSelect('proyecto.empresa', 'empresa')
+        .where('proyecto.responsable.id = :userId', { userId: user.id })
+        .andWhere('proyecto.statusProject = :statusProject', {
+          statusProject: 'Pendiente',
+        })
+        .andWhere('proyecto.estado = :estado', { estado: 'En Progreso' })
+        .getMany();
+
+      if (!proyectos.length) {
+        throw new NotFoundException(
+          'No tienes proyectos pendientes como responsable'
+        );
+      }
+
+      return proyectos;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async update(id: string, updateProyectoDto: UpdateProyectoDto) {
     try {
       const proyectoId = await this.pryectoRespository.findOne({
         where: { id },
+        relations: ['creador', 'responsable'],
       });
       if (!proyectoId)
         throw new NotFoundException(
           'No se encontro el proyecto que deseas actualizar'
         );
       await this.pryectoRespository.update(id, updateProyectoDto);
+      if (updateProyectoDto.statusProject) {
+        const nuevoEstado = updateProyectoDto.statusProject;
+        if (nuevoEstado === 'Aceptado') {
+          const correo = proyectoId.creador.correo;
+          const nombre = proyectoId.creador.nombre;
+          const responsable = proyectoId.responsable.nombre;
+          const proyecto = proyectoId.nombre;
+          this.mailService.sendEmailAceptProyecto(
+            correo,
+            nombre,
+            responsable,
+            proyecto
+          );
+        } else if (nuevoEstado === 'Rechazado') {
+          const correo = proyectoId.creador.correo;
+          const nombre = proyectoId.creador.nombre;
+          const responsable = proyectoId.responsable.nombre;
+          const proyecto = proyectoId.nombre;
+          this.mailService.sendEmailRejectProyecto(
+            correo,
+            nombre,
+            responsable,
+            proyecto
+          );
+        }
+      }
       return 'Proyecto actualizado exitosamente';
     } catch (error) {
       this.handleError(error);

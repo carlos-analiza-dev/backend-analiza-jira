@@ -55,8 +55,8 @@ export class AuthController {
 
   @Get('Allusers')
   @Auth(ValidRoles.Administrador, ValidRoles.Manager)
-  findAllUsers(@Query() paginationDto: PaginationDto) {
-    return this.authService.findAllUsers(paginationDto);
+  findAllUsers(@Query() paginationDto: PaginationDto, @GetUser() user: User) {
+    return this.authService.findAllUsers(paginationDto, user);
   }
 
   @Get('usersActives')

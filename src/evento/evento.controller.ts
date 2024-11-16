@@ -44,6 +44,12 @@ export class EventoController {
     return this.eventoService.findAllByAdmin(user);
   }
 
+  @Get('/mis-eventos-responsable')
+  @Auth()
+  findAllEventosResponsable(@GetUser() user: User) {
+    return this.eventoService.findAllEventosResponsable(user);
+  }
+
   @Get('manager')
   @Auth(ValidRoles.Manager)
   findAllEventosManager(@Query() paginationDto: PaginationDto) {

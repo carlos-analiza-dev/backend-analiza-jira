@@ -10,8 +10,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Evento } from './entities/evento.entity';
 import { User } from 'src/auth/entities/user.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Actividade } from 'src/actividades/entities/actividade.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class EventoService {
@@ -19,7 +19,8 @@ export class EventoService {
     @InjectRepository(Evento)
     private readonly eventoRepository: Repository<Evento>,
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>
+    private readonly userRepository: Repository<User>,
+    private readonly mailServise: MailService
   ) {}
   async create(createEventoDto: CreateEventoDto, user: User) {
     const {
@@ -71,6 +72,11 @@ export class EventoService {
         responsable: responsableEvento,
         usuarioCreador: user,
       });
+      await this.mailServise.sendEmailConfirmEvento(
+        responsableEvento.correo,
+        responsableEvento.nombre,
+        nombre
+      );
       await this.eventoRepository.save(eventoCreado);
       return 'Evento creado exitosamente';
     } catch (error) {
@@ -164,11 +170,42 @@ export class EventoService {
         .andWhere('evento.estado IN (:...estados)', {
           estados: ['Activo', 'Pospuesto'],
         })
+        .andWhere('evento.statusEvento = :statusEvento', {
+          statusEvento: 'Aceptado',
+        })
         .getMany();
 
       if (!eventos.length) {
         throw new NotFoundException(
           'No estás en ningún evento con estado Activo o Pospuesto'
+        );
+      }
+
+      return eventos;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAllEventosResponsable(user: User) {
+    try {
+      const eventos = await this.eventoRepository
+        .createQueryBuilder('evento')
+        .leftJoinAndSelect('evento.usuarioCreador', 'usuarioCreador')
+        .leftJoinAndSelect('evento.usuarios', 'usuarios')
+        .leftJoinAndSelect('evento.responsable', 'responsable')
+        .where('evento.responsable.id = :userId', { userId: user.id })
+        .andWhere('evento.estado IN (:...estados)', {
+          estados: ['Activo', 'Pospuesto'],
+        })
+        .andWhere('evento.statusEvento = :statusEvento', {
+          statusEvento: 'Pendiente',
+        })
+        .getMany();
+
+      if (!eventos.length) {
+        throw new NotFoundException(
+          'No tienes eventos activos o pospuestos como responsable'
         );
       }
 
@@ -293,7 +330,12 @@ export class EventoService {
   }
 
   async update(id: string, updateEventoDto: UpdateEventoDto) {
-    await this.findOne(id);
+    const eventoId = await this.findOne(id);
+
+    if (!eventoId)
+      throw new NotFoundException(
+        'No se encontro el evento que deseas actualizar'
+      );
     const { fechaFin, fechaInicio } = updateEventoDto;
 
     const startDate = new Date(fechaInicio);
@@ -318,7 +360,32 @@ export class EventoService {
 
     try {
       await this.eventoRepository.update(id, updateEventoDto);
-
+      if (updateEventoDto.statusEvento) {
+        const nuevoEstado = updateEventoDto.statusEvento;
+        if (nuevoEstado === 'Aceptado') {
+          const correo = eventoId.usuarioCreador.correo;
+          const nombre = eventoId.usuarioCreador.nombre;
+          const responsable = eventoId.responsable.nombre;
+          const evento = eventoId.nombre;
+          this.mailServise.sendEmailAceptEvento(
+            correo,
+            nombre,
+            responsable,
+            evento
+          );
+        } else if (nuevoEstado === 'Rechazado') {
+          const correo = eventoId.usuarioCreador.correo;
+          const nombre = eventoId.usuarioCreador.nombre;
+          const responsable = eventoId.responsable.nombre;
+          const evento = eventoId.nombre;
+          this.mailServise.sendEmailRejectEvento(
+            correo,
+            nombre,
+            responsable,
+            evento
+          );
+        }
+      }
       const updatedEvento = await this.eventoRepository.findOne({
         where: { id },
       });

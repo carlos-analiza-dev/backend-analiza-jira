@@ -245,7 +245,7 @@ export class AuthService {
       sucursal,
       role,
       correo,
-      pais, // Añadido el campo pais
+      pais,
     } = paginationDto;
 
     let queryUsers = this.userReository
@@ -254,45 +254,42 @@ export class AuthService {
       .leftJoinAndSelect('user.sucursal', 'sucursal')
       .take(limit)
       .skip(offset)
-      .where('user.id != :userId', { userId: user.id }); // Excluir el usuario activo
+      .where('user.id != :userId', { userId: user.id });
 
-    // Filtrar por sexo
+    if (user.rol === UserRole.ADMIN) {
+      queryUsers = queryUsers.andWhere('rol != :rol', { rol: 'Manager' });
+    }
+
     if (sexo) {
       queryUsers = queryUsers.andWhere('user.sexo = :sexo', { sexo });
     }
 
-    // Filtrar por sucursal
     if (sucursal) {
       queryUsers = queryUsers.andWhere('sucursal.nombre = :sucursal', {
         sucursal,
       });
     }
 
-    // Filtrar por rol
-    if (role) {
-      queryUsers = queryUsers.andWhere('role.nombre = :role', { role });
-    }
-
-    // Filtrar por correo
     if (correo) {
       queryUsers = queryUsers.andWhere('user.correo = :correo', { correo });
     }
 
-    // Filtrar por país
     if (pais) {
       queryUsers = queryUsers.andWhere('user.pais = :pais', { pais });
     }
 
+    if (role) {
+      queryUsers = queryUsers.andWhere('role.nombre = :role', { role });
+    }
+
     const users = await queryUsers.getMany();
 
-    // Consulta para obtener el total de usuarios filtrados, excluyendo al usuario actual
     const totalQuery = this.userReository
       .createQueryBuilder('user')
       .leftJoin('user.role', 'role')
       .leftJoin('user.sucursal', 'sucursal')
       .where('user.id != :userId', { userId: user.id });
 
-    // Filtros adicionales en la consulta del total
     if (sexo) {
       totalQuery.andWhere('user.sexo = :sexo', { sexo });
     }
@@ -325,14 +322,18 @@ export class AuthService {
     };
   }
 
-  async findAllUsers(paginationDto: PaginationDto) {
-    const { pais } = paginationDto; // Extraemos solo el país del DTO
+  async findAllUsers(paginationDto: PaginationDto, user: User) {
+    const { pais } = paginationDto;
 
     try {
-      // Creamos la condición de filtro por país si está presente
       const whereCondition = pais ? { pais } : {};
 
-      // Buscar usuarios con el filtro por país
+      if (user.rol === UserRole.ADMIN) {
+        whereCondition['rol'] = Not(UserRole.MANAGER);
+      }
+
+      whereCondition['id'] = Not(user.id);
+
       const users = await this.userReository.find({
         where: whereCondition,
       });
@@ -341,7 +342,7 @@ export class AuthService {
         throw new NotFoundException('No se encontraron usuarios');
       }
 
-      return users; // Retornamos los usuarios filtrados
+      return users;
     } catch (error) {
       throw error;
     }
@@ -357,9 +358,15 @@ export class AuthService {
         throw new NotFoundException('No se encontraron usuarios disponibles');
       }
 
-      const usuariosFiltrados = usuariosActivos.filter(
+      let usuariosFiltrados = usuariosActivos.filter(
         (usuario) => usuario.id !== user.id
       );
+
+      if (user.rol === UserRole.ADMIN) {
+        usuariosFiltrados = usuariosFiltrados.filter(
+          (usuario) => usuario.rol !== UserRole.MANAGER
+        );
+      }
 
       if (usuariosFiltrados.length === 0) {
         throw new NotFoundException(
@@ -374,7 +381,6 @@ export class AuthService {
   }
 
   async findAllUsersEmpresa(): Promise<{ empresa: string; count: number }[]> {
-    // Consultar y agrupar usuarios por empresa
     const result = await this.userReository
       .createQueryBuilder('user')
       .select('user.empresa', 'empresa')
@@ -384,7 +390,6 @@ export class AuthService {
       .andWhere('user.autorizado = :autorizado', { autorizado: 1 })
       .getRawMany();
 
-    // Formatear el resultado para que devuelva un array con objetos { empresa, count }
     return result.map((row) => ({
       empresa: row.empresa,
       count: Number(row.count),
@@ -394,27 +399,22 @@ export class AuthService {
   async findAllUsersRol(
     pais?: string
   ): Promise<{ role: string; count: number }[]> {
-    // Iniciar la consulta de usuarios agrupados por rol
     const query = this.userReository
       .createQueryBuilder('user')
-      .innerJoinAndSelect('user.role', 'role') // Unir con la tabla de roles
-      .select('role.nombre', 'role') // Seleccionar el nombre del rol
-      .addSelect('COUNT(user.id)', 'count') // Contar los usuarios por rol
-      .where('user.isActive = :isActive', { isActive: 1 }) // Filtrar usuarios activos
-      .andWhere('user.autorizado = :autorizado', { autorizado: 1 }); // Filtrar usuarios autorizados
+      .innerJoinAndSelect('user.role', 'role')
+      .select('role.nombre', 'role')
+      .addSelect('COUNT(user.id)', 'count')
+      .where('user.isActive = :isActive', { isActive: 1 })
+      .andWhere('user.autorizado = :autorizado', { autorizado: 1 });
 
-    // Agregar el filtro de país si se proporciona
     if (pais) {
       query.andWhere('user.pais = :pais', { pais });
     }
 
-    // Agrupar los resultados por nombre del rol
     query.groupBy('role.nombre');
 
-    // Ejecutar la consulta
     const result = await query.getRawMany();
 
-    // Retornar solo los roles con conteo mayor que cero
     return result
       .map((row) => ({
         role: row.role,
@@ -543,31 +543,27 @@ export class AuthService {
       .where('user.autorizado = :autorizado', { autorizado: 0 })
       .leftJoin('user.role', 'role')
       .addSelect('role.nombre')
-      .leftJoin('user.sucursal', 'sucursal') // Cambiado a leftJoin
+      .leftJoin('user.sucursal', 'sucursal')
       .addSelect('sucursal.nombre')
       .take(limit)
       .skip(offset);
 
-    // Filtro por sexo
     if (sexo) {
       queryUsers = queryUsers.andWhere('user.sexo = :sexo', { sexo });
     }
 
-    // Filtro por departamento (rol)
     if (departamento) {
       queryUsers = queryUsers.andWhere('role.nombre = :departamento', {
         departamento,
       });
     }
 
-    // Filtro por sucursal
     if (sucursal) {
       queryUsers = queryUsers.andWhere('sucursal.nombre = :sucursal', {
         sucursal,
       });
     }
 
-    // Filtro por país
     if (pais) {
       queryUsers = queryUsers.andWhere('user.pais = :pais', { pais });
     }
@@ -586,6 +582,7 @@ export class AuthService {
 
   async obtenerUserByEmail(correoDto: CorreoDto, user: User) {
     const { correo } = correoDto;
+
     if (!user?.correo || !correo) {
       throw new BadRequestException('Datos inválidos');
     }
@@ -595,10 +592,21 @@ export class AuthService {
     }
 
     const obtenerUsuario = await this.userReository.findOneBy({ correo });
-    if (!obtenerUsuario)
+
+    if (!obtenerUsuario) {
       throw new NotFoundException(
-        `No se encontro el usuario con el correo: ${correo}`
+        `No se encontró el usuario con el correo: ${correo}`
       );
+    }
+
+    if (
+      user.rol === UserRole.ADMIN ||
+      (user.rol === UserRole.USER && obtenerUsuario.rol === UserRole.MANAGER)
+    ) {
+      throw new BadRequestException(
+        'No se puede buscar un usuario con rol de Manager'
+      );
+    }
 
     if (obtenerUsuario.autorizado === 0 || obtenerUsuario.isActive === 0) {
       throw new UnauthorizedException('Usuario no autorizado');
@@ -618,12 +626,11 @@ export class AuthService {
       nombre,
       password,
       sexo,
-      roleId, // Cambiado de 'role' a 'roleId'
-      sucursalId, // Cambiado de 'sucursal' a 'sucursalId'
+      roleId,
+      sucursalId,
     } = updateUserDto;
 
     try {
-      // Buscar el usuario junto con las relaciones
       const user = await this.userReository.findOne({
         where: { id },
         relations: ['role', 'sucursal'],
@@ -635,7 +642,6 @@ export class AuthService {
         );
       }
 
-      // Asignar propiedades del DTO solo si están presentes
       Object.assign(user, {
         ...(nombre && { nombre }),
         ...(correo && { correo }),
@@ -648,7 +654,6 @@ export class AuthService {
         ...(sexo && { sexo }),
       });
 
-      // Verificar si se está actualizando el rol
       if (roleId) {
         const role = await this.rolRepository.findOne({
           where: { id: roleId },
@@ -662,7 +667,6 @@ export class AuthService {
         }
       }
 
-      // Verificar si se está actualizando la sucursal
       if (sucursalId) {
         const sucursal = await this.sucursalRepository.findOne({
           where: { id: sucursalId },
@@ -676,7 +680,6 @@ export class AuthService {
         }
       }
 
-      // Guardar el usuario actualizado
       return await this.userReository.save(user);
     } catch (error) {
       throw error;
@@ -686,23 +689,20 @@ export class AuthService {
   async findAllActiveUsers(paginationDto: PaginationDto) {
     const { pais } = paginationDto;
 
-    // Filtrar usuarios activos por país
     const usuariosActivos = await this.userReository.find({
       where: {
         isActive: 1,
-        pais: pais, // Filtrar por país
+        pais: pais,
       },
     });
 
-    // Filtrar usuarios inactivos por país
     const usuariosInactivos = await this.userReository.find({
       where: {
         isActive: 0,
-        pais: pais, // Filtrar por país
+        pais: pais,
       },
     });
 
-    // Retornar el conteo de usuarios activos e inactivos
     return {
       activos: usuariosActivos.length,
       inactivos: usuariosInactivos.length,
@@ -735,23 +735,20 @@ export class AuthService {
   async findAllUserAutorizados(paginationDto: PaginationDto) {
     const { pais } = paginationDto;
 
-    // Filtrar usuarios autorizados por país
     const usersAutorizados = await this.userReository.find({
       where: {
         autorizado: 1,
-        pais: pais, // Filtra por país
+        pais: pais,
       },
     });
 
-    // Filtrar usuarios no autorizados por país
     const usersNoAutorizados = await this.userReository.find({
       where: {
         autorizado: 0,
-        pais: pais, // Filtra por país
+        pais: pais,
       },
     });
 
-    // Retornar el conteo de autorizados y no autorizados
     return {
       autorizado: usersAutorizados.length,
       no_autorizado: usersNoAutorizados.length,
@@ -776,7 +773,6 @@ export class AuthService {
       );
     }
 
-    // Aquí se eliminarán automáticamente las relaciones si están configuradas correctamente.
     await this.userReository.remove(user);
 
     return 'Usuario Eliminado Exitosamente';

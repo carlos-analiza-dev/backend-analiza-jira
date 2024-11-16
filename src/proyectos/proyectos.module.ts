@@ -7,6 +7,8 @@ import { Tarea } from 'src/tareas/entities/tarea.entity';
 import { Proyecto } from './entities/proyecto.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { Empresa } from 'src/empresa/entities/empresa.entity';
+import { MailModule } from 'src/mail/mail.module';
+import { MailService } from 'src/mail/mail.service';
 
 @Module({
   controllers: [ProyectosController],
@@ -14,6 +16,7 @@ import { Empresa } from 'src/empresa/entities/empresa.entity';
   imports: [
     TypeOrmModule.forFeature([User, Tarea, Proyecto, Empresa]),
     AuthModule,
+    MailModule,
   ],
 })
 export class ProyectosModule {}

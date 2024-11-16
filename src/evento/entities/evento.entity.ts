@@ -43,6 +43,13 @@ export class Evento {
   })
   estado?: string;
 
+  @Column({
+    type: 'enum',
+    enum: ['Pendiente', 'Rechazado', 'Aceptado'],
+    default: 'Pendiente',
+  })
+  statusEvento: string;
+
   @CreateDateColumn()
   creadoEn: Date;
 

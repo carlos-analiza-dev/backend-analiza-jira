@@ -18,6 +18,10 @@ export class UpdateProyectoDto {
   estado?: string;
 
   @IsOptional()
+  @IsEnum(['Pendiente', 'Rechazado', 'Aceptado'])
+  statusProject?: string;
+
+  @IsOptional()
   fechaCreacion?: string;
 
   @IsOptional()

@@ -35,6 +35,13 @@ export class Proyecto {
   })
   estado: string;
 
+  @Column({
+    type: 'enum',
+    enum: ['Pendiente', 'Rechazado', 'Aceptado'],
+    default: 'Pendiente',
+  })
+  statusProject: string;
+
   @CreateDateColumn({ type: 'timestamp' })
   fechaCreacion?: Date;
 

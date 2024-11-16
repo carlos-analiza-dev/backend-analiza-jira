@@ -34,6 +34,10 @@ export class CreateEventoDto {
   @IsEnum(['Activo', 'Finalizado', 'Pospuesto'])
   estado?: string;
 
+  @IsOptional()
+  @IsEnum(['Pendiente', 'Rechazado', 'Aceptado'])
+  statusEvento?: string;
+
   @IsString()
   @IsNotEmpty({ message: 'El responsable del evento es obligatorio' })
   responsableId: string;
