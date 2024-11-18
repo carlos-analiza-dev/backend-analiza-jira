@@ -318,6 +318,34 @@ export class EventoService {
     }
   }
 
+  async findAllStatusEventos() {
+    const aceptados = await this.eventoRepository.find({
+      where: { statusEvento: 'Aceptado' },
+    });
+    const pendientes = await this.eventoRepository.find({
+      where: { statusEvento: 'Pendiente' },
+    });
+    const rechazado = await this.eventoRepository.find({
+      where: { statusEvento: 'Rechazado' },
+    });
+    try {
+      if (!aceptados || aceptados.length === 0) {
+        throw new NotFoundException('No se encontraron eventos aceptados');
+      }
+      if (!pendientes || pendientes.length === 0) {
+        throw new NotFoundException('No se encontraron eventos pendientes');
+      }
+      if (!rechazado || rechazado.length === 0) {
+        throw new NotFoundException('No se encontraron eventos rechazados');
+      }
+      return {
+        aceptados: aceptados.length,
+        rechazados: rechazado.length,
+        pendientes: pendientes.length,
+      };
+    } catch (error) {}
+  }
+
   async findOne(id: string) {
     try {
       const evento = await this.eventoRepository.findOne({ where: { id } });

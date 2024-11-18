@@ -346,6 +346,34 @@ export class ProyectosService {
     }
   }
 
+  async findAceptProyectos() {
+    const aceptados = await this.pryectoRespository.find({
+      where: { statusProject: 'Aceptado' },
+    });
+    const pendientes = await this.pryectoRespository.find({
+      where: { statusProject: 'Pendiente' },
+    });
+    const rechazado = await this.pryectoRespository.find({
+      where: { statusProject: 'Rechazado' },
+    });
+    try {
+      if (!aceptados || aceptados.length === 0) {
+        throw new NotFoundException('No se encontraron proyectos aceptados');
+      }
+      if (!pendientes || pendientes.length === 0) {
+        throw new NotFoundException('No se encontraron proyectos pendientes');
+      }
+      if (!rechazado || rechazado.length === 0) {
+        throw new NotFoundException('No se encontraron proyectos rechazados');
+      }
+      return {
+        aceptados: aceptados.length,
+        rechazados: rechazado.length,
+        pendientes: pendientes.length,
+      };
+    } catch (error) {}
+  }
+
   async update(id: string, updateProyectoDto: UpdateProyectoDto) {
     try {
       const proyectoId = await this.pryectoRespository.findOne({

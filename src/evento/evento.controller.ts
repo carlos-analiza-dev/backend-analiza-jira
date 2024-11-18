@@ -50,6 +50,12 @@ export class EventoController {
     return this.eventoService.findAllEventosResponsable(user);
   }
 
+  @Get('/status-eventos')
+  @Auth()
+  findAllStatusEventos() {
+    return this.eventoService.findAllStatusEventos();
+  }
+
   @Get('manager')
   @Auth(ValidRoles.Manager)
   findAllEventosManager(@Query() paginationDto: PaginationDto) {

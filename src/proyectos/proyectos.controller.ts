@@ -49,6 +49,12 @@ export class ProyectosController {
     return this.proyectosService.findAllProyectosResponsable(user);
   }
 
+  @Get('/accept')
+  @Auth()
+  findAceptProyectos(@GetUser() user: User) {
+    return this.proyectosService.findAceptProyectos();
+  }
+
   @Get()
   @Auth()
   findAll(@GetUser() user: User) {
