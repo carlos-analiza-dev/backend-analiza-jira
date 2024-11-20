@@ -95,10 +95,10 @@ export class AuthController {
     return this.authService.findAllByRol(paginationDto);
   }
 
-  @Get('usersByProjectRole/:projectId')
+  @Get('usersByProjectRole')
   @Auth()
-  async getUsersByProjectRole(@Param('projectId') projectId: string) {
-    return this.authService.findUsersByProjectRole(projectId);
+  async getUsersByProjectRole(@Query() paginationDto: PaginationDto) {
+    return this.authService.findUsersByProjectRole(paginationDto);
   }
 
   @Get('active-users')

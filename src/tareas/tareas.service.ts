@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateTareaDto } from './dto/create-tarea.dto';
 import { UpdateTareaDto } from './dto/update-tarea.dto';
 import { User } from 'src/auth/entities/user.entity';
@@ -20,8 +25,16 @@ export class TareasService {
     private readonly userReposiyory: Repository<User>
   ) {}
   async create(createTareaDto: CreateTareaDto, user: User) {
-    const { titulo, descripcion, estado, proyectoId, usuarioAsignado } =
-      createTareaDto;
+    const {
+      titulo,
+      descripcion,
+      estado,
+      proyectoId,
+      usuarioAsignado,
+      tareaDependenciaId,
+      fechaFin,
+      fechaInicio,
+    } = createTareaDto;
 
     const proyectoEncontrado = await this.proyectoRepository.findOne({
       where: { id: proyectoId },
@@ -38,6 +51,46 @@ export class TareasService {
     if (!usuarioEncontrado) {
       throw new NotFoundException('Usuario no encontrado');
     }
+
+    const startDate = new Date(createTareaDto.fechaInicio);
+    const endDate = new Date(createTareaDto.fechaFin);
+    const currentDate = new Date();
+
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    currentDate.setHours(0, 0, 0, 0);
+
+    if (startDate > endDate) {
+      throw new BadRequestException(
+        'La fecha de inicio no puede ser posterior a la fecha de fin.'
+      );
+    }
+
+    if (startDate < currentDate) {
+      throw new BadRequestException(
+        'La fecha de inicio no puede ser menor que la fecha actual.'
+      );
+    }
+
+    if (endDate < currentDate) {
+      throw new BadRequestException(
+        'La fecha de Finalización no puede ser menor que la fecha actual.'
+      );
+    }
+
+    let tareaDependenciaEncontrada = null;
+
+    // Solo busca la tarea dependiente si el ID fue proporcionado
+    if (tareaDependenciaId) {
+      tareaDependenciaEncontrada = await this.tareaRepository.findOne({
+        where: { id: tareaDependenciaId },
+      });
+
+      if (!tareaDependenciaEncontrada) {
+        throw new NotFoundException('Tarea dependiente no encontrada');
+      }
+    }
+
     try {
       const nuevaTarea = this.tareaRepository.create({
         titulo,
@@ -46,7 +99,11 @@ export class TareasService {
         proyecto: proyectoEncontrado,
         creador: user,
         usuarioAsignado: usuarioEncontrado,
+        tareaDependencia: tareaDependenciaEncontrada || null,
+        fechaFin,
+        fechaInicio,
       });
+
       return this.tareaRepository.save(nuevaTarea);
     } catch (error) {
       throw error;
@@ -86,14 +143,62 @@ export class TareasService {
   }
 
   async update(id: string, updateTareaDto: UpdateTareaDto, user: User) {
-    const tarea = await this.tareaRepository.findOne({ where: { id } });
-    if (!tarea) {
-      throw new NotFoundException('Tarea no encontrada');
-    }
+    try {
+      const tarea = await this.tareaRepository.findOne({
+        where: { id },
+        relations: ['tareaDependencia'],
+      });
 
-    Object.assign(tarea, updateTareaDto);
-    tarea.actualizadoPor = user;
-    return this.tareaRepository.save(tarea);
+      if (!tarea) {
+        throw new NotFoundException('Tarea no encontrada');
+      }
+
+      const startDate = new Date(updateTareaDto.fechaInicio);
+      const endDate = new Date(updateTareaDto.fechaFin);
+      const currentDate = new Date();
+
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+      currentDate.setHours(0, 0, 0, 0);
+
+      if (startDate > endDate) {
+        throw new BadRequestException(
+          'La fecha de inicio no puede ser posterior a la fecha de fin.'
+        );
+      }
+
+      if (startDate < currentDate) {
+        throw new BadRequestException(
+          'La fecha de inicio no puede ser menor que la fecha actual.'
+        );
+      }
+
+      if (endDate < currentDate) {
+        throw new BadRequestException(
+          'La fecha de Finalización no puede ser menor que la fecha actual.'
+        );
+      }
+
+      // Validación adicional para tarea dependiente
+      if (
+        tarea.tareaDependencia &&
+        tarea.tareaDependencia.estado !== 'Finalizada' &&
+        updateTareaDto.estado !== undefined
+      ) {
+        const nombreDependencia =
+          tarea.tareaDependencia.titulo || 'tarea dependiente';
+        throw new BadRequestException(
+          `No se puede cambiar el estado porque la tarea de la que depende (${nombreDependencia}) no está finalizada`
+        );
+      }
+
+      Object.assign(tarea, updateTareaDto);
+      tarea.actualizadoPor = user;
+
+      return await this.tareaRepository.save(tarea);
+    } catch (error) {
+      throw error; // Lanzar el error capturado
+    }
   }
 
   async remove(id: string) {

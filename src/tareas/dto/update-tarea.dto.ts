@@ -1,4 +1,5 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsDate, IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class UpdateTareaDto {
   @IsString()
@@ -8,6 +9,16 @@ export class UpdateTareaDto {
   @IsString()
   @IsOptional()
   descripcion?: string;
+
+  @Type(() => Date)
+  @IsDate({ message: 'fecha de Inicio debe ser una fecha válida' })
+  @IsOptional()
+  fechaInicio?: Date;
+
+  @Type(() => Date)
+  @IsDate({ message: 'fecha Finalizacion debe ser una fecha válida' })
+  @IsOptional()
+  fechaFin?: Date;
 
   @IsEnum(['Nueva', 'Recibida', 'EnProgreso', 'Finalizada'])
   @IsOptional()

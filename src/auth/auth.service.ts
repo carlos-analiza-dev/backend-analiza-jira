@@ -169,40 +169,33 @@ export class AuthService {
     }
   }
 
-  async findUsersByProjectRole(projectId: string) {
-    const proyecto = await this.proyectoRepository.findOne({
-      where: { id: projectId },
-      relations: ['rolDirigido', 'responsable', 'usuarios'],
-    });
+  async findUsersByProjectRole(paginationDto: PaginationDto) {
+    try {
+      const { pais, departamento } = paginationDto;
+      console.log(pais);
+      console.log(departamento);
 
-    if (!proyecto) {
-      throw new NotFoundException(`Proyecto con id ${projectId} no encontrado`);
+      // Filtrar usuarios por país y departamento
+      const users = await this.userReository.find({
+        where: {
+          pais: pais, // Filtrar por país
+          role: { nombre: departamento }, // Filtrar por el nombre del departamento (rol)
+          isActive: 1,
+          autorizado: 1,
+        },
+        relations: ['role'], // Relacionar con la entidad de rol para acceder a role.nombre
+      });
+
+      if (!users.length) {
+        throw new NotFoundException(
+          `No se encontraron usuarios con el país ${pais} y departamento ${departamento}`
+        );
+      }
+
+      return users;
+    } catch (error) {
+      throw error;
     }
-
-    const { rolDirigido, responsable, usuarios } = proyecto;
-
-    const users = await this.userReository.find({
-      where: {
-        role: rolDirigido,
-        isActive: 1,
-        autorizado: 1,
-      },
-      relations: ['role'],
-    });
-
-    if (!users.length) {
-      throw new NotFoundException(
-        `No se encontraron usuarios con el departamento del proyecto ${projectId}`
-      );
-    }
-
-    const filteredUsers = users.filter(
-      (user) =>
-        user.id !== responsable.id &&
-        !usuarios.some((colaborador) => colaborador.id === user.id)
-    );
-
-    return filteredUsers;
   }
 
   async sendMail(correo: string) {

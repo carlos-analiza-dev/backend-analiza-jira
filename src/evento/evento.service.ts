@@ -52,6 +52,12 @@ export class EventoService {
       );
     }
 
+    if (endDate < currentDate) {
+      throw new BadRequestException(
+        'La fecha de Finalizacion no puede ser menor que la fecha actual.'
+      );
+    }
+
     const responsableEvento = await this.userRepository.findOne({
       where: { id: responsableId },
     });

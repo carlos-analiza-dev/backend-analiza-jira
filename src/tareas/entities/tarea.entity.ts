@@ -39,6 +39,15 @@ export class Tarea {
   @ManyToOne(() => User, (usuario) => usuario.tareas, { eager: true })
   usuarioAsignado: User;
 
+  @ManyToOne(() => Tarea, { nullable: true })
+  tareaDependencia: Tarea;
+
+  @Column({ type: 'timestamp' })
+  fechaInicio: Date;
+
+  @Column({ type: 'timestamp' })
+  fechaFin: Date;
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 
