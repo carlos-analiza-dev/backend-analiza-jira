@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateTareaDto } from './dto/create-tarea.dto';
@@ -138,8 +137,16 @@ export class TareasService {
     }
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} tarea`;
+  async findAllTareaId(tareaId: string) {
+    try {
+      const tarea = await this.tareaRepository.findOne({
+        where: { id: tareaId },
+      });
+      if (!tarea) throw new NotFoundException('No se encontro la tarea.');
+      return tarea;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async update(id: string, updateTareaDto: UpdateTareaDto, user: User) {
@@ -176,6 +183,12 @@ export class TareasService {
       if (endDate < currentDate) {
         throw new BadRequestException(
           'La fecha de Finalización no puede ser menor que la fecha actual.'
+        );
+      }
+
+      if (startDate > currentDate) {
+        throw new BadRequestException(
+          'La fecha de Inicio no puede ser mayor que la fecha actual.'
         );
       }
 

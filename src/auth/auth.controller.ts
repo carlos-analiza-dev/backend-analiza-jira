@@ -77,10 +77,10 @@ export class AuthController {
     return this.authService.findAllUsersRol(pais);
   }
 
-  @Get('usersByEventos/:eventoId')
+  @Get('usersByEventos')
   @Auth()
-  findAllUsersByEventos(@Param('eventoId') eventoId: string) {
-    return this.authService.findAllUsersByEventos(eventoId);
+  findAllUsersByEventos(@Query() paginationDto: PaginationDto) {
+    return this.authService.findAllUsersByEventos(paginationDto);
   }
 
   @Get('usersByEmail')
@@ -95,10 +95,13 @@ export class AuthController {
     return this.authService.findAllByRol(paginationDto);
   }
 
-  @Get('usersByProjectRole')
+  @Get('usersByProjectRole/:proyectoId')
   @Auth()
-  async getUsersByProjectRole(@Query() paginationDto: PaginationDto) {
-    return this.authService.findUsersByProjectRole(paginationDto);
+  async getUsersByProjectRole(
+    @Param('proyectoId', ParseUUIDPipe) proyectoId: string,
+    @Query() paginationDto: PaginationDto
+  ) {
+    return this.authService.findUsersByProjectRole(paginationDto, proyectoId);
   }
 
   @Get('active-users')

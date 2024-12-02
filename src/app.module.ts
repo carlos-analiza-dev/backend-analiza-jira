@@ -13,6 +13,7 @@ import { MailModule } from './mail/mail.module';
 import { EventoModule } from './evento/evento.module';
 import { ActividadesModule } from './actividades/actividades.module';
 import { EmpresaModule } from './empresa/empresa.module';
+import { ComentariosTaskModule } from './comentarios-task/comentarios-task.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { EmpresaModule } from './empresa/empresa.module';
     EventoModule,
     ActividadesModule,
     EmpresaModule,
+    ComentariosTaskModule,
   ],
   controllers: [AppController],
   providers: [AppService],

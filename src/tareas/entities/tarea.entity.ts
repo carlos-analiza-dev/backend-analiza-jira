@@ -1,4 +1,5 @@
 import { User } from 'src/auth/entities/user.entity';
+import { Comentario } from 'src/comentarios-task/entities/comentarios-task.entity';
 import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
 import {
   Column,
@@ -7,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 
 @Entity('tareas')
@@ -38,6 +40,12 @@ export class Tarea {
 
   @ManyToOne(() => User, (usuario) => usuario.tareas, { eager: true })
   usuarioAsignado: User;
+
+  @OneToMany(() => Comentario, (comentario) => comentario.tarea, {
+    cascade: true,
+    eager: true,
+  })
+  comentarios: Comentario[];
 
   @ManyToOne(() => Tarea, { nullable: true })
   tareaDependencia: Tarea;

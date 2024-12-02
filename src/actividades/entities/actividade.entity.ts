@@ -30,8 +30,17 @@ export class Actividade {
   @ManyToOne(() => User, { eager: true, nullable: true })
   actualizadoPor: User;
 
+  @Column({ type: 'timestamp' })
+  fechaInicio: Date;
+
+  @Column({ type: 'timestamp' })
+  fechaFin: Date;
+
   @ManyToOne(() => User, (usuario) => usuario.actividades, { eager: true })
   usuarioAsignado: User;
+
+  @ManyToOne(() => Actividade, { nullable: true })
+  actividadDependencia: Actividade;
 
   @ManyToOne(() => Evento, (evento) => evento.actividad)
   evento: Evento;

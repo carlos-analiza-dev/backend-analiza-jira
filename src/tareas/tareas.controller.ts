@@ -37,6 +37,12 @@ export class TareasController {
     return this.tareasService.findAllTareasByProyectoId(id);
   }
 
+  @Get('tarea/:tareaId')
+  @Auth()
+  findAllTareaId(@Param('tareaId', ParseUUIDPipe) tareaId: string) {
+    return this.tareasService.findAllTareaId(tareaId);
+  }
+
   @Patch(':id')
   @Auth()
   update(

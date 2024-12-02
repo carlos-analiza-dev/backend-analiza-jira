@@ -22,8 +22,15 @@ export class ActividadesService {
     private readonly eventoRepository: Repository<Evento>
   ) {}
   async create(createActividadeDto: CreateActividadeDto, user: User) {
-    const { titulo, descripcion, usuarioAsignado, eventoId } =
-      createActividadeDto;
+    const {
+      titulo,
+      descripcion,
+      usuarioAsignado,
+      eventoId,
+      fechaFin,
+      fechaInicio,
+      actividadDependenciaId,
+    } = createActividadeDto;
     try {
       if (!titulo || !descripcion || !usuarioAsignado) {
         throw new BadRequestException(
@@ -43,12 +50,55 @@ export class ActividadesService {
       if (!eventoEncontrado) {
         throw new NotFoundException('No se encontro el evento asignado');
       }
+
+      const startDate = new Date(createActividadeDto.fechaInicio);
+      const endDate = new Date(createActividadeDto.fechaFin);
+      const currentDate = new Date();
+
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+      currentDate.setHours(0, 0, 0, 0);
+
+      if (startDate > endDate) {
+        throw new BadRequestException(
+          'La fecha de inicio no puede ser posterior a la fecha de fin.'
+        );
+      }
+
+      if (startDate < currentDate) {
+        throw new BadRequestException(
+          'La fecha de inicio no puede ser menor que la fecha actual.'
+        );
+      }
+
+      if (endDate < currentDate) {
+        throw new BadRequestException(
+          'La fecha de Finalización no puede ser menor que la fecha actual.'
+        );
+      }
+
+      let actividadDependenciaEncontrada = null;
+
+      if (actividadDependenciaId) {
+        actividadDependenciaEncontrada =
+          await this.actividadesRepository.findOne({
+            where: { id: actividadDependenciaId },
+          });
+
+        if (!actividadDependenciaEncontrada) {
+          throw new NotFoundException('Tarea dependiente no encontrada');
+        }
+      }
+
       const actividad = this.actividadesRepository.create({
         titulo: titulo,
         descripcion: descripcion,
         evento: eventoEncontrado,
         usuarioAsignado: usuarioEncontrado,
         creador: user,
+        actividadDependencia: actividadDependenciaEncontrada,
+        fechaFin,
+        fechaInicio,
       });
       await this.actividadesRepository.save(actividad);
       return 'Actividad Creada Exitosamente';
@@ -88,19 +138,68 @@ export class ActividadesService {
 
   async update(
     id: string,
-    updateActividadeDto: UpdateActividadeDto,
+    updateActividadDto: UpdateActividadeDto,
     user: User
   ) {
     try {
       const actividad = await this.actividadesRepository.findOne({
         where: { id },
+        relations: ['actividadDependencia'],
       });
+
       if (!actividad) {
-        throw new BadRequestException('No se pudo actualizar la actividad');
+        throw new NotFoundException('Actividad no encontrada');
       }
-      Object.assign(actividad, updateActividadeDto);
+
+      const startDate = new Date(updateActividadDto.fechaInicio);
+      const endDate = new Date(updateActividadDto.fechaFin);
+      const currentDate = new Date();
+
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+      currentDate.setHours(0, 0, 0, 0);
+
+      if (startDate > endDate) {
+        throw new BadRequestException(
+          'La fecha de inicio no puede ser posterior a la fecha de fin.'
+        );
+      }
+
+      if (startDate < currentDate) {
+        throw new BadRequestException(
+          'La fecha de inicio no puede ser menor que la fecha actual.'
+        );
+      }
+
+      if (endDate < currentDate) {
+        throw new BadRequestException(
+          'La fecha de Finalización no puede ser menor que la fecha actual.'
+        );
+      }
+
+      if (startDate > currentDate) {
+        throw new BadRequestException(
+          'La fecha de Inicio no puede ser mayor que la fecha actual.'
+        );
+      }
+
+      // Validación adicional para tarea dependiente
+      if (
+        actividad.actividadDependencia &&
+        actividad.actividadDependencia.estado !== 'Finalizada' &&
+        updateActividadDto.estado !== undefined
+      ) {
+        const nombreDependencia =
+          actividad.actividadDependencia.titulo || 'actividad dependiente';
+        throw new BadRequestException(
+          `No se puede cambiar el estado porque la actividad de la que depende (${nombreDependencia}) no está finalizada`
+        );
+      }
+
+      Object.assign(actividad, updateActividadDto);
       actividad.actualizadoPor = user;
-      return this.actividadesRepository.save(actividad);
+
+      return await this.actividadesRepository.save(actividad);
     } catch (error) {
       throw error;
     }

@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Not, Repository } from 'typeorm';
+import { In, IsNull, Not, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { LoginUserDto } from './dto/login-user.dto';
@@ -169,21 +169,52 @@ export class AuthService {
     }
   }
 
-  async findUsersByProjectRole(paginationDto: PaginationDto) {
+  async findUsersByProjectRole(
+    paginationDto: PaginationDto,
+    proyectoId: string
+  ) {
     try {
       const { pais, departamento } = paginationDto;
-      console.log(pais);
-      console.log(departamento);
 
-      // Filtrar usuarios por país y departamento
+      // Obtener los IDs del creador, responsable y colaboradores del proyecto
+      const proyecto = await this.proyectoRepository.findOne({
+        where: { id: proyectoId },
+        relations: ['creador', 'responsable', 'usuarios'], // Incluir relación con usuarios (colaboradores)
+      });
+
+      if (!proyecto) {
+        throw new NotFoundException(
+          `No se encontró el proyecto con ID ${proyectoId}`
+        );
+      }
+
+      const creadorId = proyecto.creador.id;
+      const responsableId = proyecto.responsable.id;
+      const colaboradoresIds = proyecto.usuarios.map(
+        (colaborador) => colaborador.id
+      ); // Extraer IDs de colaboradores
+
+      // Filtrar usuarios por país, departamento y excluir creador, responsable y colaboradores
       const users = await this.userReository.find({
-        where: {
-          pais: pais, // Filtrar por país
-          role: { nombre: departamento }, // Filtrar por el nombre del departamento (rol)
-          isActive: 1,
-          autorizado: 1,
-        },
-        relations: ['role'], // Relacionar con la entidad de rol para acceder a role.nombre
+        where: [
+          // Mostrar usuarios con rol asignado y que no sean colaboradores, creador o responsable
+          {
+            pais: pais,
+            role: { id: departamento }, // Filtrar por departamento (rol)
+            isActive: 1,
+            autorizado: 1,
+            id: Not(In([creadorId, responsableId, ...colaboradoresIds])), // Excluir creador, responsable y colaboradores
+          },
+          // Mostrar usuarios sin rol asignado, pero que no sean colaboradores, creador o responsable
+          {
+            pais: pais,
+            role: IsNull(), // Usuarios sin rol
+            isActive: 1,
+            autorizado: 1,
+            id: Not(In([creadorId, responsableId, ...colaboradoresIds])), // Excluir creador, responsable y colaboradores
+          },
+        ],
+        relations: ['role'], // Relacionar con la entidad de rol
       });
 
       if (!users.length) {
@@ -416,35 +447,30 @@ export class AuthService {
       .filter((row) => row.count > 0);
   }
 
-  async findAllUsersByEventos(eventoId: string) {
-    const evento = await this.eventoRepository.findOne({
-      where: { id: eventoId },
-      relations: ['usuarioCreador', 'responsable', 'usuarios'],
-    });
+  async findAllUsersByEventos(paginationDto: PaginationDto) {
+    try {
+      const { pais, departamento } = paginationDto;
 
-    if (!evento) {
-      throw new NotFoundException(`Evento con id ${eventoId} no encontrado`);
+      const users = await this.userReository.find({
+        where: {
+          pais: pais,
+          role: { id: departamento },
+          isActive: 1,
+          autorizado: 1,
+        },
+        relations: ['role'],
+      });
+
+      if (!users.length) {
+        throw new NotFoundException(
+          `No se encontraron usuarios con el país ${pais} y departamento ${departamento}`
+        );
+      }
+
+      return users;
+    } catch (error) {
+      throw error;
     }
-
-    const colaboradoresIds = [
-      evento.usuarioCreador?.id,
-      evento.responsable?.id,
-      ...evento.usuarios.map((colaborador) => colaborador.id),
-    ].filter(Boolean);
-
-    const usuarios = await this.userReository.find({
-      where: {
-        isActive: 1,
-        autorizado: 1,
-        id: Not(In(colaboradoresIds)),
-      },
-    });
-
-    if (usuarios.length === 0) {
-      throw new NotFoundException('No se encontraron usuarios disponibles');
-    }
-
-    return usuarios;
   }
 
   async findByEmail(sendMailDto: SendMailDto) {
@@ -589,15 +615,6 @@ export class AuthService {
     if (!obtenerUsuario) {
       throw new NotFoundException(
         `No se encontró el usuario con el correo: ${correo}`
-      );
-    }
-
-    if (
-      user.rol === UserRole.ADMIN ||
-      (user.rol === UserRole.USER && obtenerUsuario.rol === UserRole.MANAGER)
-    ) {
-      throw new BadRequestException(
-        'No se puede buscar un usuario con rol de Manager'
       );
     }
 
