@@ -1,10 +1,12 @@
 import { User } from 'src/auth/entities/user.entity';
+import { ComentariosActividad } from 'src/comentarios-actividad/entities/comentarios-actividad.entity';
 import { Evento } from 'src/evento/entities/evento.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -27,8 +29,21 @@ export class Actividade {
   })
   estado: string;
 
+  @Column({
+    type: 'enum',
+    enum: ['Baja', 'Media', 'Alta', 'Critica'],
+    default: 'Baja',
+  })
+  prioridad: string;
+
   @ManyToOne(() => User, { eager: true, nullable: true })
   actualizadoPor: User;
+
+  @OneToMany(() => ComentariosActividad, (comentario) => comentario.actividad, {
+    cascade: true,
+    eager: true,
+  })
+  comentarios: ComentariosActividad[];
 
   @Column({ type: 'timestamp' })
   fechaInicio: Date;

@@ -1,37 +1,40 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-
-import { UpdateComentariosTaskDto } from './dto/update-comentarios-task.dto';
-import { CreateComentarioDto } from './dto/create-comentarios-task.dto';
+import { CreateComentarioDto } from './dto/create-comentarios-actividad.dto';
+import { UpdateComentariosActividadDto } from './dto/update-comentarios-actividad.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Comentario } from './entities/comentarios-task.entity';
+import { ComentariosActividad } from './entities/comentarios-actividad.entity';
 import { Repository } from 'typeorm';
 import { User } from 'src/auth/entities/user.entity';
-import { Tarea } from 'src/tareas/entities/tarea.entity';
+import { Actividade } from 'src/actividades/entities/actividade.entity';
 
 @Injectable()
-export class ComentariosTaskService {
+export class ComentariosActividadService {
   constructor(
-    @InjectRepository(Comentario)
-    private readonly comentarioRepository: Repository<Comentario>,
+    @InjectRepository(ComentariosActividad)
+    private readonly comentarioRepository: Repository<ComentariosActividad>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(Tarea)
-    private readonly tareaRepository: Repository<Tarea>
+    @InjectRepository(Actividade)
+    private readonly actividadRepository: Repository<Actividade>
   ) {}
 
-  async create(tareaId: string, createComentariosTaskDto: CreateComentarioDto) {
-    const { contenido, userId } = createComentariosTaskDto;
+  async create(
+    actividadId: string,
+    createComentariosActividadDto: CreateComentarioDto
+  ) {
+    const { contenido, userId } = createComentariosActividadDto;
 
     try {
       if (!contenido)
         throw new NotFoundException(
-          `No se encontró la tarea con ID ${tareaId}`
+          `No se encontró la actividad con ID ${actividadId}`
         );
 
-      const tarea = await this.tareaRepository.findOne({
-        where: { id: tareaId },
+      const actividad = await this.actividadRepository.findOne({
+        where: { id: actividadId },
       });
-      if (!tarea) throw new NotFoundException('No se encontro la tarea.');
+      if (!actividad)
+        throw new NotFoundException('No se encontro la actividad.');
 
       const autor = await this.userRepository.findOne({
         where: { id: userId },
@@ -43,7 +46,7 @@ export class ComentariosTaskService {
 
       const nuevoComentario = this.comentarioRepository.create({
         contenido,
-        tarea,
+        actividad,
         autor,
       });
       await this.comentarioRepository.save(nuevoComentario);
@@ -54,17 +57,17 @@ export class ComentariosTaskService {
     }
   }
 
-  async findAll(tareaId: string) {
+  async findAll(actividadId: string) {
     try {
       const comentarios = await this.comentarioRepository.find({
-        where: { tarea: { id: tareaId } },
+        where: { actividad: { id: actividadId } },
         relations: ['autor'],
         order: { createdAt: 'DESC' },
       });
 
       if (!comentarios.length) {
         throw new NotFoundException(
-          'No se encontraron comentarios para esta tarea.'
+          'No se encontraron comentarios para esta actividad.'
         );
       }
 
@@ -74,7 +77,10 @@ export class ComentariosTaskService {
     }
   }
 
-  async update(id: string, updateComentariosTaskDto: UpdateComentariosTaskDto) {
+  async update(
+    id: string,
+    updateComentariosTaskDto: UpdateComentariosActividadDto
+  ) {
     const { contenido } = updateComentariosTaskDto;
 
     try {

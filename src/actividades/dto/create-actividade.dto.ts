@@ -21,6 +21,9 @@ export class CreateActividadeDto {
   @IsOptional()
   estado?: string;
 
+  @IsEnum(['Baja', 'Media', 'Alta', 'Critica'])
+  prioridad: string;
+
   @Type(() => Date)
   @IsDate({ message: 'fecha de Inicio debe ser una fecha válida' })
   @IsNotEmpty({ message: 'La fecha de inicio es obligatoria' })

@@ -14,6 +14,7 @@ import { EventoModule } from './evento/evento.module';
 import { ActividadesModule } from './actividades/actividades.module';
 import { EmpresaModule } from './empresa/empresa.module';
 import { ComentariosTaskModule } from './comentarios-task/comentarios-task.module';
+import { ComentariosActividadModule } from './comentarios-actividad/comentarios-actividad.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { ComentariosTaskModule } from './comentarios-task/comentarios-task.modul
     ActividadesModule,
     EmpresaModule,
     ComentariosTaskModule,
+    ComentariosActividadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

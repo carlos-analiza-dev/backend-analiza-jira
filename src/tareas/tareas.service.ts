@@ -33,6 +33,7 @@ export class TareasService {
       tareaDependenciaId,
       fechaFin,
       fechaInicio,
+      prioridad,
     } = createTareaDto;
 
     const proyectoEncontrado = await this.proyectoRepository.findOne({
@@ -95,6 +96,7 @@ export class TareasService {
         titulo,
         descripcion,
         estado,
+        prioridad,
         proyecto: proyectoEncontrado,
         creador: user,
         usuarioAsignado: usuarioEncontrado,

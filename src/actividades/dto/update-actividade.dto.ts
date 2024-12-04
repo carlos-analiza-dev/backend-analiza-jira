@@ -23,4 +23,8 @@ export class UpdateActividadeDto {
   @IsEnum(['Nueva', 'Recibida', 'EnProgreso', 'Finalizada'])
   @IsOptional()
   estado?: string;
+
+  @IsEnum(['Baja', 'Media', 'Alta', 'Critica'])
+  @IsOptional()
+  prioridad?: string;
 }

@@ -29,6 +29,13 @@ export class Tarea {
   })
   estado: string;
 
+  @Column({
+    type: 'enum',
+    enum: ['Baja', 'Media', 'Alta', 'Critica'],
+    default: 'Baja',
+  })
+  prioridad: string;
+
   @ManyToOne(() => Proyecto, (proyecto) => proyecto.tareas, { eager: true })
   proyecto: Proyecto;
 

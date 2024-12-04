@@ -6,10 +6,12 @@ import {
   Patch,
   Param,
   Delete,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ComentariosTaskService } from './comentarios-task.service';
 import { UpdateComentariosTaskDto } from './dto/update-comentarios-task.dto';
 import { CreateComentarioDto } from './dto/create-comentarios-task.dto';
+import { Auth } from 'src/auth/decorators/auth.decorator';
 
 @Controller('comentarios-task')
 export class ComentariosTaskController {
@@ -17,31 +19,36 @@ export class ComentariosTaskController {
     private readonly comentariosTaskService: ComentariosTaskService
   ) {}
 
-  @Post()
-  create(@Body() createComentariosTaskDto: CreateComentarioDto) {
-    return this.comentariosTaskService.create(createComentariosTaskDto);
+  @Post(':tareaId')
+  @Auth()
+  create(
+    @Param('tareaId', ParseUUIDPipe) tareaId: string,
+    @Body() createComentariosTaskDto: CreateComentarioDto
+  ) {
+    return this.comentariosTaskService.create(
+      tareaId,
+      createComentariosTaskDto
+    );
   }
 
-  @Get()
-  findAll() {
-    return this.comentariosTaskService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.comentariosTaskService.findOne(+id);
+  @Get(':tareaId')
+  @Auth()
+  findAll(@Param('tareaId', ParseUUIDPipe) tareaId: string) {
+    return this.comentariosTaskService.findAll(tareaId);
   }
 
   @Patch(':id')
+  @Auth()
   update(
     @Param('id') id: string,
     @Body() updateComentariosTaskDto: UpdateComentariosTaskDto
   ) {
-    return this.comentariosTaskService.update(+id, updateComentariosTaskDto);
+    return this.comentariosTaskService.update(id, updateComentariosTaskDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.comentariosTaskService.remove(+id);
+  @Auth()
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.comentariosTaskService.remove(id);
   }
 }

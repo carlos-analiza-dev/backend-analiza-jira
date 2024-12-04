@@ -30,6 +30,7 @@ export class ActividadesService {
       fechaFin,
       fechaInicio,
       actividadDependenciaId,
+      prioridad,
     } = createActividadeDto;
     try {
       if (!titulo || !descripcion || !usuarioAsignado) {
@@ -94,6 +95,7 @@ export class ActividadesService {
         titulo: titulo,
         descripcion: descripcion,
         evento: eventoEncontrado,
+        prioridad,
         usuarioAsignado: usuarioEncontrado,
         creador: user,
         actividadDependencia: actividadDependenciaEncontrada,
