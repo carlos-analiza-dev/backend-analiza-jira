@@ -104,6 +104,15 @@ export class AuthController {
     return this.authService.findUsersByProjectRole(paginationDto, proyectoId);
   }
 
+  @Get('usersByEventoRole/:eventoId')
+  @Auth()
+  async getUsersByEventoRole(
+    @Param('eventoId', ParseUUIDPipe) eventoId: string,
+    @Query() paginationDto: PaginationDto
+  ) {
+    return this.authService.findUsersByEventoRole(paginationDto, eventoId);
+  }
+
   @Get('active-users')
   @Auth(ValidRoles.Administrador, ValidRoles.Manager)
   findAllActiveUsers(@Query() paginationDto: PaginationDto) {

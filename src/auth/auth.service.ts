@@ -229,6 +229,61 @@ export class AuthService {
     }
   }
 
+  async findUsersByEventoRole(paginationDto: PaginationDto, eventoId: string) {
+    try {
+      const { pais, departamento } = paginationDto;
+
+      // Obtener los IDs del creador, responsable y colaboradores del proyecto
+      const evento = await this.eventoRepository.findOne({
+        where: { id: eventoId },
+        relations: ['usuarioCreador', 'responsable', 'usuarios'],
+      });
+
+      if (!evento) {
+        throw new NotFoundException(
+          `No se encontró el evento con ID ${eventoId}`
+        );
+      }
+
+      const creadorId = evento.usuarioCreador.id;
+      const responsableId = evento.responsable.id;
+      const colaboradoresIds = evento.usuarios.map(
+        (colaborador) => colaborador.id
+      );
+
+      const users = await this.userReository.find({
+        where: [
+          {
+            pais: pais,
+            role: { id: departamento },
+            isActive: 1,
+            autorizado: 1,
+            id: Not(In([creadorId, responsableId, ...colaboradoresIds])),
+          },
+
+          {
+            pais: pais,
+            role: IsNull(),
+            isActive: 1,
+            autorizado: 1,
+            id: Not(In([creadorId, responsableId, ...colaboradoresIds])),
+          },
+        ],
+        relations: ['role'],
+      });
+
+      if (!users.length) {
+        throw new NotFoundException(
+          `No se encontraron usuarios con el país ${pais} y departamento ${departamento}`
+        );
+      }
+
+      return users;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async sendMail(correo: string) {
     if (!correo)
       throw new BadRequestException('No se proporciono un correo electronico');

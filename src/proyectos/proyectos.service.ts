@@ -244,7 +244,7 @@ export class ProyectosService {
         ...colaboradores,
         responsableActivo,
         creadorActivo,
-      ].filter((usuario) => usuario !== null); // Filtrar nulos
+      ].filter((usuario) => usuario !== null);
 
       return usuariosProyecto;
     } catch (error) {
