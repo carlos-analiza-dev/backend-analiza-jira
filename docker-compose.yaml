@@ -3,12 +3,35 @@ version: '3'
 services:
   db:
     image: postgres:14.3
+    container_name: analizaBackendDB
     restart: always
     ports:
       - '5432:5432'
     environment:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
-    container_name: analizaBackend
+      POSTGRES_USER: ${DB_USERNAME}
     volumes:
       - ./postgres:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: analizaBackendApp
+    restart: always
+    ports:
+      - '${PORT}:${PORT}'
+    depends_on:
+      - db
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      DB_HOST: db
+      DB_PORT: ${BD_PORT}
+      DB_USERNAME: ${DB_USERNAME}
+      PORT: ${PORT}
+      HOST_API: ${HOST_API}
+      JWT_SECRET: ${JWT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL}
+      MAIL_TRANSPORT: ${MAIL_TRANSPORT}
