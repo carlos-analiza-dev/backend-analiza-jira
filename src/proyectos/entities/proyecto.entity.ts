@@ -42,6 +42,12 @@ export class Proyecto {
   })
   statusProject: string;
 
+  @Column({
+    type: 'text',
+    default: 'Sin detalle',
+  })
+  justificacion?: string;
+
   @CreateDateColumn({ type: 'timestamp' })
   fechaCreacion?: Date;
 

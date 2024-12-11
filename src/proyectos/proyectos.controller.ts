@@ -55,6 +55,19 @@ export class ProyectosController {
     return this.proyectosService.findAceptProyectos();
   }
 
+  @Get('/rechazados')
+  @Auth()
+  findRejectedProyectos(@GetUser() user: User) {
+    return this.proyectosService.findRejectedProyectos(user);
+  }
+
+  @Get('status/:responsableId')
+  async getProyectosPorStatus(
+    @Param('responsableId', ParseUUIDPipe) responsableId: string
+  ) {
+    return this.proyectosService.getProyectosPorStatus(responsableId);
+  }
+
   @Get()
   @Auth()
   findAll(@GetUser() user: User) {

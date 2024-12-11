@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class UpdateProyectoDto {
   @IsOptional()
@@ -22,14 +22,20 @@ export class UpdateProyectoDto {
   statusProject?: string;
 
   @IsOptional()
+  @IsString({ message: 'El campo descripcion solo permite letras' })
+  justificacion?: string;
+
+  @IsOptional()
   fechaCreacion?: string;
 
   @IsOptional()
   id?: string;
 
   @IsOptional()
+  @IsUUID()
   creador?: {};
 
   @IsOptional()
+  @IsUUID()
   responsableId?: string;
 }

@@ -50,6 +50,12 @@ export class Evento {
   })
   statusEvento: string;
 
+  @Column({
+    type: 'text',
+    default: 'Sin detalle',
+  })
+  justificacion?: string;
+
   @CreateDateColumn()
   creadoEn: Date;
 

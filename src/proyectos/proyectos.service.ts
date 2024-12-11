@@ -37,6 +37,7 @@ export class ProyectosService {
       responsableId,
       rolDirigido,
       empresaId,
+      justificacion,
     } = createProyectoDto;
     try {
       const responsable = await this.userRepository.findOne({
@@ -75,6 +76,7 @@ export class ProyectosService {
         responsable: responsable,
         rolDirigido: rol,
         empresa: empresa,
+        justificacion: justificacion,
       });
       if (!proyecto) {
         throw new BadRequestException('Ocurrio un error al crear el proyecto');
@@ -148,6 +150,37 @@ export class ProyectosService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async getProyectosPorStatus(responsableId: string) {
+    // Buscar los proyectos del responsable
+    const proyectos = await this.pryectoRespository.find({
+      where: { responsable: { id: responsableId } },
+    });
+
+    if (!proyectos.length) {
+      throw new NotFoundException(
+        'No se encontraron proyectos para este usuario'
+      );
+    }
+
+    // Contar por status
+    const statusCounts = {
+      Pendiente: 0,
+      Rechazado: 0,
+      Aceptado: 0,
+    };
+
+    proyectos.forEach((proyecto) => {
+      if (statusCounts[proyecto.statusProject] !== undefined) {
+        statusCounts[proyecto.statusProject]++;
+      }
+    });
+
+    return {
+      totalProyectos: proyectos.length,
+      ...statusCounts,
+    };
   }
 
   async findProyectosManager(paginationDto: PaginationDto = {}) {
@@ -320,6 +353,8 @@ export class ProyectosService {
   }
 
   async findAllProyectosResponsable(user: User) {
+    console.log('USERRR', user);
+
     try {
       const proyectos = await this.pryectoRespository
         .createQueryBuilder('proyecto')
@@ -338,6 +373,29 @@ export class ProyectosService {
         throw new NotFoundException(
           'No tienes proyectos pendientes como responsable'
         );
+      }
+
+      return proyectos;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findRejectedProyectos(user: User) {
+    try {
+      const proyectos = await this.pryectoRespository
+        .createQueryBuilder('proyecto')
+        .leftJoinAndSelect('proyecto.creador', 'creador')
+        .leftJoinAndSelect('proyecto.responsable', 'responsable')
+        .leftJoinAndSelect('proyecto.empresa', 'empresa')
+        .where('creador.id = :userId', { userId: user.id })
+        .andWhere('proyecto.statusProject = :statusProject', {
+          statusProject: 'Rechazado',
+        })
+        .getMany();
+
+      if (!proyectos.length) {
+        throw new NotFoundException('No has creado proyectos rechazados.');
       }
 
       return proyectos;
@@ -376,43 +434,74 @@ export class ProyectosService {
 
   async update(id: string, updateProyectoDto: UpdateProyectoDto) {
     try {
-      const proyectoId = await this.pryectoRespository.findOne({
+      const proyecto = await this.pryectoRespository.findOne({
         where: { id },
         relations: ['creador', 'responsable'],
       });
-      if (!proyectoId)
+
+      if (!proyecto) {
         throw new NotFoundException(
-          'No se encontro el proyecto que deseas actualizar'
+          'No se encontró el proyecto que deseas actualizar'
         );
-      await this.pryectoRespository.update(id, updateProyectoDto);
+      }
+
+      // Itera sobre las propiedades del DTO y actualiza solo los campos presentes
+      Object.keys(updateProyectoDto).forEach((key) => {
+        const value = updateProyectoDto[key];
+        if (value !== undefined && value !== null) {
+          proyecto[key] = value;
+        }
+      });
+
+      // Si existe un nuevo responsableId, busca al responsable y actualiza la relación
+      if (updateProyectoDto.responsableId) {
+        const responsable = await this.userRepository.findOne({
+          where: { id: updateProyectoDto.responsableId },
+        });
+
+        if (!responsable) {
+          throw new NotFoundException('Responsable no encontrado');
+        }
+
+        proyecto.responsable = responsable;
+      }
+
+      // Si el estado del proyecto ha cambiado, se envía el correo correspondiente
       if (updateProyectoDto.statusProject) {
         const nuevoEstado = updateProyectoDto.statusProject;
+        const correo = proyecto.creador.correo;
+        const nombre = proyecto.creador.nombre;
+        const responsable = proyecto.responsable;
+        const proyectoNombre = proyecto.nombre;
+
         if (nuevoEstado === 'Aceptado') {
-          const correo = proyectoId.creador.correo;
-          const nombre = proyectoId.creador.nombre;
-          const responsable = proyectoId.responsable.nombre;
-          const proyecto = proyectoId.nombre;
           this.mailService.sendEmailAceptProyecto(
             correo,
             nombre,
-            responsable,
-            proyecto
+            responsable.nombre,
+            proyectoNombre
           );
         } else if (nuevoEstado === 'Rechazado') {
-          const correo = proyectoId.creador.correo;
-          const nombre = proyectoId.creador.nombre;
-          const responsable = proyectoId.responsable.nombre;
-          const proyecto = proyectoId.nombre;
           this.mailService.sendEmailRejectProyecto(
             correo,
             nombre,
-            responsable,
-            proyecto
+            responsable.nombre,
+            proyectoNombre
+          );
+        } else if (nuevoEstado === 'Pendiente') {
+          this.mailService.sendEmailConfirmProject(
+            responsable.correo,
+            responsable.nombre,
+            proyectoNombre
           );
         }
       }
+
+      // Guarda el proyecto actualizado
+      await this.pryectoRespository.save(proyecto);
       return 'Proyecto actualizado exitosamente';
     } catch (error) {
+      console.log('ERROR BACK', error);
       this.handleError(error);
     }
   }

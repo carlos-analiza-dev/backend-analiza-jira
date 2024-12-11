@@ -26,6 +26,10 @@ export class CreateEventoDto {
   @IsNotEmpty({ message: 'La fecha de finalizacion es obligatoria' })
   fechaFin: Date;
 
+  @IsOptional()
+  @IsString({ message: 'El campo descripcion solo permite letras' })
+  justificacion?: string;
+
   @IsNotEmpty({ message: 'El tipo de evento es obligatorio' })
   @IsEnum(['Conferencia', 'Seminario', 'Festivo', 'Virtual'])
   tipoEvento: string;

@@ -352,6 +352,36 @@ export class EventoService {
     } catch (error) {}
   }
 
+  async getEventosPorStatus(responsableId: string) {
+    const eventos = await this.eventoRepository.find({
+      where: { responsable: { id: responsableId } },
+    });
+
+    if (!eventos.length) {
+      throw new NotFoundException(
+        'No se encontraron eventos para este usuario'
+      );
+    }
+
+    // Contar por status
+    const statusCounts = {
+      Pendiente: 0,
+      Rechazado: 0,
+      Aceptado: 0,
+    };
+
+    eventos.forEach((proyecto) => {
+      if (statusCounts[proyecto.statusEvento] !== undefined) {
+        statusCounts[proyecto.statusEvento]++;
+      }
+    });
+
+    return {
+      totaleventos: eventos.length,
+      ...statusCounts,
+    };
+  }
+
   async findOne(id: string) {
     try {
       const evento = await this.eventoRepository.findOne({ where: { id } });
@@ -363,63 +393,122 @@ export class EventoService {
     }
   }
 
+  async findRejectedEventos(user: User) {
+    try {
+      const eventos = await this.eventoRepository
+        .createQueryBuilder('evento')
+        .leftJoinAndSelect('evento.usuarioCreador', 'usuarioCreador')
+        .leftJoinAndSelect('evento.responsable', 'responsable')
+        .leftJoinAndSelect('evento.usuarios', 'usuarios')
+        .where('usuarioCreador.id = :userId', { userId: user.id })
+        .andWhere('evento.statusEvento = :statusEvento', {
+          statusEvento: 'Rechazado',
+        })
+        .getMany();
+
+      if (!eventos.length) {
+        throw new NotFoundException('No se han encontrado eventos rechazados.');
+      }
+
+      return eventos;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async update(id: string, updateEventoDto: UpdateEventoDto) {
+    console.log('UPDATE EVENTO', updateEventoDto);
+
     const eventoId = await this.findOne(id);
 
-    if (!eventoId)
+    if (!eventoId) {
       throw new NotFoundException(
-        'No se encontro el evento que deseas actualizar'
-      );
-    const { fechaFin, fechaInicio } = updateEventoDto;
-
-    const startDate = new Date(fechaInicio);
-    const endDate = new Date(fechaFin);
-    const currentDate = new Date();
-
-    startDate.setHours(0, 0, 0, 0);
-    endDate.setHours(0, 0, 0, 0);
-    currentDate.setHours(0, 0, 0, 0);
-
-    if (startDate > endDate) {
-      throw new BadRequestException(
-        'La fecha de inicio no puede ser posterior a la fecha de fin.'
+        'No se encontró el evento que deseas actualizar'
       );
     }
 
-    if (startDate < currentDate) {
-      throw new BadRequestException(
-        'La fecha de inicio no puede ser menor que la fecha actual.'
-      );
+    const { responsableId, fechaFin, fechaInicio, ...restoCampos } =
+      updateEventoDto;
+
+    // Actualizar el responsable si se proporciona el responsableId
+    if (responsableId) {
+      const responsable = await this.userRepository.findOne({
+        where: { id: responsableId },
+      });
+      if (!responsable) {
+        throw new BadRequestException('El responsable proporcionado no existe');
+      }
+      eventoId.responsable = responsable;
     }
+
+    // Validación de fechas, si se proporcionan
+    if (fechaInicio || fechaFin) {
+      const startDate = new Date(fechaInicio || eventoId.fechaInicio);
+      const endDate = new Date(fechaFin || eventoId.fechaFin);
+      const currentDate = new Date();
+
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
+      currentDate.setHours(0, 0, 0, 0);
+
+      if (startDate > endDate) {
+        throw new BadRequestException(
+          'La fecha de inicio no puede ser posterior a la fecha de fin.'
+        );
+      }
+
+      if (startDate < currentDate) {
+        throw new BadRequestException(
+          'La fecha de inicio no puede ser menor que la fecha actual.'
+        );
+      }
+
+      // Si se modificaron las fechas, actualizamos el evento
+      if (fechaInicio) eventoId.fechaInicio = startDate;
+      if (fechaFin) eventoId.fechaFin = endDate;
+    }
+
+    // Actualizar todos los campos proporcionados en el DTO (excepto responsableId y fechas)
+    Object.keys(restoCampos).forEach((key) => {
+      if (restoCampos[key] !== undefined) {
+        eventoId[key] = restoCampos[key];
+      }
+    });
 
     try {
-      await this.eventoRepository.update(id, updateEventoDto);
+      await this.eventoRepository.save(eventoId);
+
+      // Si el estado del evento cambió, enviamos el correo correspondiente
       if (updateEventoDto.statusEvento) {
         const nuevoEstado = updateEventoDto.statusEvento;
+        const correo = eventoId.usuarioCreador.correo;
+        const nombre = eventoId.usuarioCreador.nombre;
+        const responsable = eventoId.responsable;
+        const evento = eventoId.nombre;
+
         if (nuevoEstado === 'Aceptado') {
-          const correo = eventoId.usuarioCreador.correo;
-          const nombre = eventoId.usuarioCreador.nombre;
-          const responsable = eventoId.responsable.nombre;
-          const evento = eventoId.nombre;
           this.mailServise.sendEmailAceptEvento(
             correo,
             nombre,
-            responsable,
+            responsable.nombre,
             evento
           );
         } else if (nuevoEstado === 'Rechazado') {
-          const correo = eventoId.usuarioCreador.correo;
-          const nombre = eventoId.usuarioCreador.nombre;
-          const responsable = eventoId.responsable.nombre;
-          const evento = eventoId.nombre;
           this.mailServise.sendEmailRejectEvento(
             correo,
             nombre,
-            responsable,
+            responsable.nombre,
             evento
+          );
+        } else if (nuevoEstado === 'Pendiente') {
+          this.mailServise.sendEmailConfirmEvento(
+            responsable.correo,
+            responsable.nombre,
+            nombre
           );
         }
       }
+
       const updatedEvento = await this.eventoRepository.findOne({
         where: { id },
       });

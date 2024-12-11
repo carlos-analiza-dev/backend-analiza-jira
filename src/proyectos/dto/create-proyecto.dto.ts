@@ -27,6 +27,10 @@ export class CreateProyectoDto {
   @IsEnum(['Pendiente', 'Rechazado', 'Aceptado'])
   statusProject?: string;
 
+  @IsOptional()
+  @IsString({ message: 'El campo descripcion solo permite letras' })
+  justificacion?: string;
+
   @IsNotEmpty({ message: 'El responsable del proyecto el obligatorio' })
   @IsUUID()
   responsableId: string;

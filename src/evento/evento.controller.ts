@@ -56,10 +56,23 @@ export class EventoController {
     return this.eventoService.findAllStatusEventos();
   }
 
+  @Get('status/:responsableId')
+  async getEventosPorStatus(
+    @Param('responsableId', ParseUUIDPipe) responsableId: string
+  ) {
+    return this.eventoService.getEventosPorStatus(responsableId);
+  }
+
   @Get('manager')
   @Auth(ValidRoles.Manager)
   findAllEventosManager(@Query() paginationDto: PaginationDto) {
     return this.eventoService.findAllEventosManager(paginationDto);
+  }
+
+  @Get('eventos-rechazados')
+  @Auth()
+  findRejectedEventos(@GetUser() user: User) {
+    return this.eventoService.findRejectedEventos(user);
   }
 
   @Get(':id/colaborador')
