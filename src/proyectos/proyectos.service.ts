@@ -155,7 +155,10 @@ export class ProyectosService {
   async getProyectosPorStatus(responsableId: string) {
     // Buscar los proyectos del responsable
     const proyectos = await this.pryectoRespository.find({
-      where: { responsable: { id: responsableId },estado: In(['En Progreso']),  },
+      where: {
+        responsable: { id: responsableId },
+        estado: In(['En Progreso']),
+      },
     });
 
     if (!proyectos.length) {
@@ -353,8 +356,6 @@ export class ProyectosService {
   }
 
   async findAllProyectosResponsable(user: User) {
-
-
     try {
       const proyectos = await this.pryectoRespository
         .createQueryBuilder('proyecto')
@@ -383,7 +384,7 @@ export class ProyectosService {
 
   async findRejectedProyectos(paginationDto: PaginationDto, user: User) {
     const { limit = 5, offset = 0 } = paginationDto; // Valores por defecto
-  
+
     try {
       const [proyectos, total] = await this.pryectoRespository
         .createQueryBuilder('proyecto')
@@ -397,11 +398,11 @@ export class ProyectosService {
         .take(limit) // Limitar registros
         .skip(offset) // Desplazar registros
         .getManyAndCount(); // Obtener datos y total de registros
-  
+
       if (!proyectos.length) {
         throw new NotFoundException('No has creado proyectos rechazados.');
       }
-  
+
       return {
         total,
         proyectos,
@@ -410,7 +411,28 @@ export class ProyectosService {
       throw error;
     }
   }
-  
+
+  async contarProyectosFinalizadosPorUsuario(userId: string) {
+    const comoCreador = await this.pryectoRespository.count({
+      where: {
+        estado: 'Finalizado',
+        creador: { id: userId },
+      },
+    });
+
+    const comoResponsable = await this.pryectoRespository.count({
+      where: {
+        estado: 'Finalizado',
+        responsable: { id: userId },
+      },
+    });
+
+    return {
+      creador: comoCreador,
+      responsable: comoResponsable,
+      total: comoCreador + comoResponsable,
+    };
+  }
 
   async findAceptProyectos() {
     const aceptados = await this.pryectoRespository.find({
@@ -509,7 +531,6 @@ export class ProyectosService {
       await this.pryectoRespository.save(proyecto);
       return 'Proyecto actualizado exitosamente';
     } catch (error) {
-   
       this.handleError(error);
     }
   }

@@ -356,35 +356,55 @@ export class EventoService {
     const eventos = await this.eventoRepository.find({
       where: {
         responsable: { id: responsableId },
-        estado: In(['Activo', 'Pospuesto']), 
+        estado: In(['Activo', 'Pospuesto']),
       },
     });
-  
+
     if (!eventos.length) {
       throw new NotFoundException(
         'No se encontraron eventos activos o pospuestos para este usuario'
       );
     }
-  
 
     const statusCounts = {
       Pendiente: 0,
       Rechazado: 0,
       Aceptado: 0,
     };
-  
+
     eventos.forEach((evento) => {
       if (statusCounts[evento.statusEvento] !== undefined) {
         statusCounts[evento.statusEvento]++;
       }
     });
-  
+
     return {
       totaleventos: eventos.length,
       ...statusCounts,
     };
   }
-  
+
+  async countFinalizedEventsByUser(userId: string) {
+    const creador = await this.eventoRepository.count({
+      where: {
+        estado: 'Finalizado',
+        usuarioCreador: { id: userId },
+      },
+    });
+
+    const responsable = await this.eventoRepository.count({
+      where: {
+        estado: 'Finalizado',
+        responsable: { id: userId },
+      },
+    });
+
+    return {
+      creador,
+      responsable,
+      total: creador + responsable,
+    };
+  }
 
   async findOne(id: string) {
     try {
@@ -399,7 +419,7 @@ export class EventoService {
 
   async findRejectedEventos(paginationDto: PaginationDto, user: User) {
     const { limit = 5, offset = 0 } = paginationDto; // Valores por defecto
-  
+
     try {
       const [eventos, total] = await this.eventoRepository
         .createQueryBuilder('evento')
@@ -413,25 +433,21 @@ export class EventoService {
         .take(limit) // Limitar registros
         .skip(offset) // Desplazar registros
         .getManyAndCount(); // Obtener datos y total de registros
-  
+
       if (!eventos.length) {
         throw new NotFoundException('No se han encontrado eventos rechazados.');
       }
-  
+
       return {
         total,
-        data:eventos,
-       
+        data: eventos,
       };
     } catch (error) {
       throw error;
     }
   }
-  
 
   async update(id: string, updateEventoDto: UpdateEventoDto) {
- 
-
     const eventoId = await this.findOne(id);
 
     if (!eventoId) {
