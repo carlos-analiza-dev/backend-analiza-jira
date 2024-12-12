@@ -57,8 +57,8 @@ export class ProyectosController {
 
   @Get('/rechazados')
   @Auth()
-  findRejectedProyectos(@GetUser() user: User) {
-    return this.proyectosService.findRejectedProyectos(user);
+  findRejectedProyectos(@Query() paginationDto:PaginationDto,@GetUser() user: User) {
+    return this.proyectosService.findRejectedProyectos(paginationDto,user);
   }
 
   @Get('status/:responsableId')

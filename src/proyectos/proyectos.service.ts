@@ -8,7 +8,7 @@ import { CreateProyectoDto } from './dto/create-proyecto.dto';
 import { UpdateProyectoDto } from './dto/update-proyecto.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Proyecto } from './entities/proyecto.entity';
-import { Brackets, Repository } from 'typeorm';
+import { Brackets, In, Repository } from 'typeorm';
 import { User } from 'src/auth/entities/user.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { Empresa } from 'src/empresa/entities/empresa.entity';
@@ -155,7 +155,7 @@ export class ProyectosService {
   async getProyectosPorStatus(responsableId: string) {
     // Buscar los proyectos del responsable
     const proyectos = await this.pryectoRespository.find({
-      where: { responsable: { id: responsableId } },
+      where: { responsable: { id: responsableId },estado: In(['En Progreso']),  },
     });
 
     if (!proyectos.length) {
@@ -353,7 +353,7 @@ export class ProyectosService {
   }
 
   async findAllProyectosResponsable(user: User) {
-    console.log('USERRR', user);
+
 
     try {
       const proyectos = await this.pryectoRespository
@@ -381,9 +381,11 @@ export class ProyectosService {
     }
   }
 
-  async findRejectedProyectos(user: User) {
+  async findRejectedProyectos(paginationDto: PaginationDto, user: User) {
+    const { limit = 5, offset = 0 } = paginationDto; // Valores por defecto
+  
     try {
-      const proyectos = await this.pryectoRespository
+      const [proyectos, total] = await this.pryectoRespository
         .createQueryBuilder('proyecto')
         .leftJoinAndSelect('proyecto.creador', 'creador')
         .leftJoinAndSelect('proyecto.responsable', 'responsable')
@@ -392,17 +394,23 @@ export class ProyectosService {
         .andWhere('proyecto.statusProject = :statusProject', {
           statusProject: 'Rechazado',
         })
-        .getMany();
-
+        .take(limit) // Limitar registros
+        .skip(offset) // Desplazar registros
+        .getManyAndCount(); // Obtener datos y total de registros
+  
       if (!proyectos.length) {
         throw new NotFoundException('No has creado proyectos rechazados.');
       }
-
-      return proyectos;
+  
+      return {
+        total,
+        proyectos,
+      };
     } catch (error) {
       throw error;
     }
   }
+  
 
   async findAceptProyectos() {
     const aceptados = await this.pryectoRespository.find({
@@ -501,7 +509,7 @@ export class ProyectosService {
       await this.pryectoRespository.save(proyecto);
       return 'Proyecto actualizado exitosamente';
     } catch (error) {
-      console.log('ERROR BACK', error);
+   
       this.handleError(error);
     }
   }

@@ -71,8 +71,8 @@ export class EventoController {
 
   @Get('eventos-rechazados')
   @Auth()
-  findRejectedEventos(@GetUser() user: User) {
-    return this.eventoService.findRejectedEventos(user);
+  findRejectedEventos(@Query() paginationDto:PaginationDto,@GetUser() user: User) {
+    return this.eventoService.findRejectedEventos(paginationDto,user);
   }
 
   @Get(':id/colaborador')

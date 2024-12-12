@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { CreateEventoDto } from './dto/create-evento.dto';
 import { UpdateEventoDto } from './dto/update-evento.dto';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Evento } from './entities/evento.entity';
 import { User } from 'src/auth/entities/user.entity';
@@ -354,33 +354,37 @@ export class EventoService {
 
   async getEventosPorStatus(responsableId: string) {
     const eventos = await this.eventoRepository.find({
-      where: { responsable: { id: responsableId } },
+      where: {
+        responsable: { id: responsableId },
+        estado: In(['Activo', 'Pospuesto']), 
+      },
     });
-
+  
     if (!eventos.length) {
       throw new NotFoundException(
-        'No se encontraron eventos para este usuario'
+        'No se encontraron eventos activos o pospuestos para este usuario'
       );
     }
+  
 
-    // Contar por status
     const statusCounts = {
       Pendiente: 0,
       Rechazado: 0,
       Aceptado: 0,
     };
-
-    eventos.forEach((proyecto) => {
-      if (statusCounts[proyecto.statusEvento] !== undefined) {
-        statusCounts[proyecto.statusEvento]++;
+  
+    eventos.forEach((evento) => {
+      if (statusCounts[evento.statusEvento] !== undefined) {
+        statusCounts[evento.statusEvento]++;
       }
     });
-
+  
     return {
       totaleventos: eventos.length,
       ...statusCounts,
     };
   }
+  
 
   async findOne(id: string) {
     try {
@@ -393,9 +397,11 @@ export class EventoService {
     }
   }
 
-  async findRejectedEventos(user: User) {
+  async findRejectedEventos(paginationDto: PaginationDto, user: User) {
+    const { limit = 5, offset = 0 } = paginationDto; // Valores por defecto
+  
     try {
-      const eventos = await this.eventoRepository
+      const [eventos, total] = await this.eventoRepository
         .createQueryBuilder('evento')
         .leftJoinAndSelect('evento.usuarioCreador', 'usuarioCreador')
         .leftJoinAndSelect('evento.responsable', 'responsable')
@@ -404,20 +410,27 @@ export class EventoService {
         .andWhere('evento.statusEvento = :statusEvento', {
           statusEvento: 'Rechazado',
         })
-        .getMany();
-
+        .take(limit) // Limitar registros
+        .skip(offset) // Desplazar registros
+        .getManyAndCount(); // Obtener datos y total de registros
+  
       if (!eventos.length) {
         throw new NotFoundException('No se han encontrado eventos rechazados.');
       }
-
-      return eventos;
+  
+      return {
+        total,
+        data:eventos,
+       
+      };
     } catch (error) {
       throw error;
     }
   }
+  
 
   async update(id: string, updateEventoDto: UpdateEventoDto) {
-    console.log('UPDATE EVENTO', updateEventoDto);
+ 
 
     const eventoId = await this.findOne(id);
 
