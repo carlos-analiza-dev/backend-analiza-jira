@@ -1,5 +1,6 @@
 import { Actividade } from 'src/actividades/entities/actividade.entity';
 import { User } from 'src/auth/entities/user.entity';
+import { EventosRechazado } from 'src/eventos-rechazados/entities/eventos-rechazado.entity';
 import {
   Column,
   CreateDateColumn,
@@ -71,6 +72,9 @@ export class Evento {
 
   @ManyToOne(() => User, { eager: true })
   responsable: User;
+
+  @OneToMany(() => EventosRechazado, (rechazoEvento) => rechazoEvento.evento)
+  rechazos: EventosRechazado[];
 
   @OneToMany(() => Actividade, (actividad) => actividad.evento)
   actividad: Actividade[];

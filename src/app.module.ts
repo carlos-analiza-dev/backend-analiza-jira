@@ -15,6 +15,8 @@ import { ActividadesModule } from './actividades/actividades.module';
 import { EmpresaModule } from './empresa/empresa.module';
 import { ComentariosTaskModule } from './comentarios-task/comentarios-task.module';
 import { ComentariosActividadModule } from './comentarios-actividad/comentarios-actividad.module';
+import { ProyectosRechazadosModule } from './proyectos-rechazados/proyectos-rechazados.module';
+import { EventosRechazadosModule } from './eventos-rechazados/eventos-rechazados.module';
 
 @Module({
   imports: [
@@ -41,6 +43,8 @@ import { ComentariosActividadModule } from './comentarios-actividad/comentarios-
     EmpresaModule,
     ComentariosTaskModule,
     ComentariosActividadModule,
+    ProyectosRechazadosModule,
+    EventosRechazadosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

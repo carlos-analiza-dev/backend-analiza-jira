@@ -5,13 +5,14 @@ import {
 } from '@nestjs/common';
 import { CreateEventoDto } from './dto/create-evento.dto';
 import { UpdateEventoDto } from './dto/update-evento.dto';
-import { In, Repository } from 'typeorm';
+import { Brackets, In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Evento } from './entities/evento.entity';
 import { User } from 'src/auth/entities/user.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { MailService } from 'src/mail/mail.service';
+import { EventosRechazado } from 'src/eventos-rechazados/entities/eventos-rechazado.entity';
 
 @Injectable()
 export class EventoService {
@@ -20,6 +21,8 @@ export class EventoService {
     private readonly eventoRepository: Repository<Evento>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(EventosRechazado)
+    private readonly eventoRechazadosRepo: Repository<EventosRechazado>,
     private readonly mailServise: MailService
   ) {}
   async create(createEventoDto: CreateEventoDto, user: User) {
@@ -406,6 +409,35 @@ export class EventoService {
     };
   }
 
+  async obtenerEventosFinalizados(
+    paginationDto: PaginationDto,
+    userId: string
+  ) {
+    const { limit = 5, offset = 0 } = paginationDto;
+
+    const [eventos, total] = await this.eventoRepository
+      .createQueryBuilder('evento')
+      .leftJoinAndSelect('evento.usuarioCreador', 'usuarioCreador')
+      .leftJoinAndSelect('evento.responsable', 'responsable')
+      .where('evento.estado = :estado', { estado: 'Finalizado' })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('usuarioCreador.id = :userId', { userId }).orWhere(
+            'responsable.id = :userId',
+            { userId }
+          );
+        })
+      )
+      .take(limit)
+      .skip(offset)
+      .getManyAndCount();
+
+    return {
+      total,
+      data: eventos,
+    };
+  }
+
   async findOne(id: string) {
     try {
       const evento = await this.eventoRepository.findOne({ where: { id } });
@@ -507,7 +539,6 @@ export class EventoService {
     try {
       await this.eventoRepository.save(eventoId);
 
-      // Si el estado del evento cambió, enviamos el correo correspondiente
       if (updateEventoDto.statusEvento) {
         const nuevoEstado = updateEventoDto.statusEvento;
         const correo = eventoId.usuarioCreador.correo;
@@ -523,6 +554,12 @@ export class EventoService {
             evento
           );
         } else if (nuevoEstado === 'Rechazado') {
+          const rechazo = this.eventoRechazadosRepo.create({
+            evento: eventoId,
+            usuario: responsable,
+            motivoRechazo: updateEventoDto.justificacion,
+          });
+          await this.eventoRechazadosRepo.save(rechazo);
           this.mailServise.sendEmailRejectEvento(
             correo,
             nombre,

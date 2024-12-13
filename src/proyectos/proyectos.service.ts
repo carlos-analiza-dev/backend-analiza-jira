@@ -14,6 +14,7 @@ import { Role } from 'src/roles/entities/role.entity';
 import { Empresa } from 'src/empresa/entities/empresa.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { MailService } from 'src/mail/mail.service';
+import { ProyectosRechazado } from 'src/proyectos-rechazados/entities/proyectos-rechazado.entity';
 
 @Injectable()
 export class ProyectosService {
@@ -26,6 +27,8 @@ export class ProyectosService {
     private readonly rolRepository: Repository<Role>,
     @InjectRepository(Empresa)
     private readonly empresaRepository: Repository<Empresa>,
+    @InjectRepository(ProyectosRechazado)
+    private readonly proyectosRechazadosRepo: Repository<ProyectosRechazado>,
     private readonly mailService: MailService
   ) {}
   async create(createProyectoDto: CreateProyectoDto, user: User) {
@@ -434,6 +437,35 @@ export class ProyectosService {
     };
   }
 
+  async obtenerProyectosFinalizados(
+    paginationDto: PaginationDto,
+    userId: string
+  ) {
+    const { limit = 5, offset = 0 } = paginationDto;
+
+    const [proyectos, total] = await this.pryectoRespository
+      .createQueryBuilder('proyecto')
+      .leftJoinAndSelect('proyecto.creador', 'creador')
+      .leftJoinAndSelect('proyecto.responsable', 'responsable')
+      .where('proyecto.estado = :estado', { estado: 'Finalizado' })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('creador.id = :userId', { userId }).orWhere(
+            'responsable.id = :userId',
+            { userId }
+          );
+        })
+      )
+      .take(limit)
+      .skip(offset)
+      .getManyAndCount();
+
+    return {
+      total,
+      proyectos,
+    };
+  }
+
   async findAceptProyectos() {
     const aceptados = await this.pryectoRespository.find({
       where: { statusProject: 'Aceptado' },
@@ -464,6 +496,7 @@ export class ProyectosService {
 
   async update(id: string, updateProyectoDto: UpdateProyectoDto) {
     try {
+      // Buscar el proyecto
       const proyecto = await this.pryectoRespository.findOne({
         where: { id },
         relations: ['creador', 'responsable'],
@@ -496,7 +529,7 @@ export class ProyectosService {
         proyecto.responsable = responsable;
       }
 
-      // Si el estado del proyecto ha cambiado, se envía el correo correspondiente
+      // Si el estado del proyecto ha cambiado, se realiza la acción correspondiente
       if (updateProyectoDto.statusProject) {
         const nuevoEstado = updateProyectoDto.statusProject;
         const correo = proyecto.creador.correo;
@@ -504,6 +537,7 @@ export class ProyectosService {
         const responsable = proyecto.responsable;
         const proyectoNombre = proyecto.nombre;
 
+        // Enviar correos según el estado del proyecto
         if (nuevoEstado === 'Aceptado') {
           this.mailService.sendEmailAceptProyecto(
             correo,
@@ -512,6 +546,13 @@ export class ProyectosService {
             proyectoNombre
           );
         } else if (nuevoEstado === 'Rechazado') {
+          const rechazo = this.proyectosRechazadosRepo.create({
+            proyecto,
+            usuario: responsable,
+            motivoRechazo: updateProyectoDto.justificacion,
+          });
+          await this.proyectosRechazadosRepo.save(rechazo);
+
           this.mailService.sendEmailRejectProyecto(
             correo,
             nombre,
@@ -527,7 +568,6 @@ export class ProyectosService {
         }
       }
 
-      // Guarda el proyecto actualizado
       await this.pryectoRespository.save(proyecto);
       return 'Proyecto actualizado exitosamente';
     } catch (error) {

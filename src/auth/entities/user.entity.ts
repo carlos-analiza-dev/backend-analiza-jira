@@ -1,5 +1,7 @@
 import { Actividade } from 'src/actividades/entities/actividade.entity';
 import { Evento } from 'src/evento/entities/evento.entity';
+import { EventosRechazado } from 'src/eventos-rechazados/entities/eventos-rechazado.entity';
+import { ProyectosRechazado } from 'src/proyectos-rechazados/entities/proyectos-rechazado.entity';
 import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
@@ -76,6 +78,18 @@ export class User {
 
   @ManyToMany(() => Evento, (evento) => evento.usuarios)
   evento: Evento[];
+
+  @OneToMany(
+    () => ProyectosRechazado,
+    (rechazoProyecto) => rechazoProyecto.usuario
+  )
+  rechazosProyectos: ProyectosRechazado[];
+
+  @OneToMany(
+    () => EventosRechazado,
+    (eventoRechazado) => eventoRechazado.usuario
+  )
+  rechazosEventos: EventosRechazado[];
 
   @ManyToMany(() => Proyecto, (proyecto) => proyecto.usuarios, {
     cascade: true,

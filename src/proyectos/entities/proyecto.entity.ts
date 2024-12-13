@@ -1,5 +1,6 @@
 import { User } from 'src/auth/entities/user.entity';
 import { Empresa } from 'src/empresa/entities/empresa.entity';
+import { ProyectosRechazado } from 'src/proyectos-rechazados/entities/proyectos-rechazado.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { Tarea } from 'src/tareas/entities/tarea.entity';
 
@@ -60,6 +61,12 @@ export class Proyecto {
 
   @OneToMany(() => Tarea, (tarea) => tarea.proyecto)
   tareas: Tarea[];
+
+  @OneToMany(
+    () => ProyectosRechazado,
+    (rechazoProyecto) => rechazoProyecto.proyecto
+  )
+  rechazos: ProyectosRechazado[];
 
   @ManyToOne(() => User, { eager: true })
   responsable: User;

@@ -69,6 +69,18 @@ export class ProyectosController {
     return this.proyectosService.contarProyectosFinalizadosPorUsuario(userId);
   }
 
+  @Get('finalizados-proyectos/:userId')
+  @Auth()
+  async obtenerProyectosFinalizados(
+    @Query() paginationDto: PaginationDto,
+    @Param('userId', ParseUUIDPipe) userId: string
+  ) {
+    return await this.proyectosService.obtenerProyectosFinalizados(
+      paginationDto,
+      userId
+    );
+  }
+
   @Get('status/:responsableId')
   async getProyectosPorStatus(
     @Param('responsableId', ParseUUIDPipe) responsableId: string

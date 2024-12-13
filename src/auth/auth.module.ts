@@ -14,6 +14,8 @@ import { Proyecto } from 'src/proyectos/entities/proyecto.entity';
 import { MailService } from 'src/mail/mail.service';
 import { Actividade } from 'src/actividades/entities/actividade.entity';
 import { Evento } from 'src/evento/entities/evento.entity';
+import { ProyectosRechazado } from 'src/proyectos-rechazados/entities/proyectos-rechazado.entity';
+import { EventosRechazado } from 'src/eventos-rechazados/entities/eventos-rechazado.entity';
 
 @Module({
   controllers: [AuthController],
@@ -28,6 +30,8 @@ import { Evento } from 'src/evento/entities/evento.entity';
       Proyecto,
       Actividade,
       Evento,
+      ProyectosRechazado,
+      EventosRechazado,
     ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({

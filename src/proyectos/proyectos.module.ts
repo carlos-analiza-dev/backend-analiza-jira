@@ -8,7 +8,6 @@ import { Proyecto } from './entities/proyecto.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { Empresa } from 'src/empresa/entities/empresa.entity';
 import { MailModule } from 'src/mail/mail.module';
-import { MailService } from 'src/mail/mail.service';
 
 @Module({
   controllers: [ProyectosController],

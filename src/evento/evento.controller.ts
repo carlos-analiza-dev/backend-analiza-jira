@@ -82,6 +82,18 @@ export class EventoController {
     return this.eventoService.countFinalizedEventsByUser(userId);
   }
 
+  @Get('finalizados-eventos/:userId')
+  @Auth()
+  async obtenerEventosFinalizados(
+    @Query() paginationDto: PaginationDto,
+    @Param('userId', ParseUUIDPipe) userId: string
+  ) {
+    return await this.eventoService.obtenerEventosFinalizados(
+      paginationDto,
+      userId
+    );
+  }
+
   @Get(':id/colaborador')
   @Auth()
   getColaboradoresByProjectId(
